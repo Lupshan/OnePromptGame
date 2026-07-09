@@ -51,20 +51,20 @@ return {
     end,
   },
   {
-    id = "storm_bolt",
+    id = "storm_brand",
     family = "tempest",
-    name = "Storm Bolt",
-    flavor = "Why send one message when the sky owns the wire?",
+    name = "Storm Brand",
+    flavor = "Come down like weather.",
     maxLevel = 3,
     desc = function(l, m)
-      return ("Your bolt pierces %d extra %s and applies Shock."):format(
-        l, l == 1 and "enemy" or "enemies", m)
+      return ("Downward strikes (pogo) Shock their target and deal +%d%% damage."):format(pct(0.2 * l * m))
     end,
     apply = function(run, ctx)
-      run:addFlat("boltPierce", ctx.level)
-      ctx.on("boltHit", function(projectile, enemy)
-        if not enemy.dead then
+      ctx.on("enemyDamaged", function(enemy, amount, meta, source)
+        if meta.melee and meta.downStrike and not meta.status and not meta.brandProc and not enemy.dead then
           enemy:applyStatus("shock", { time = 4, power = ctx.mult, maxPower = 3 })
+          enemy:takeDamage(amount * 0.2 * ctx.level * ctx.mult, nil, source,
+            { brandProc = true, noHitstop = true, noKnockback = true })
         end
       end)
     end,

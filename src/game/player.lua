@@ -43,7 +43,6 @@ function Player.new(room, x, y, run)
   self.comboTimer = 0
   self.attackAnim = 0
   self.attackAngle = 0
-  self.boltCd = 0
 
   self.invuln = 0
   self.hurtLock = 0
@@ -102,7 +101,6 @@ function Player:update(dt)
   self.wallCoyote = math.max(0, self.wallCoyote - dt)
   self.dashCd = math.max(0, self.dashCd - dt)
   self.attackCd = math.max(0, self.attackCd - dt)
-  self.boltCd = math.max(0, self.boltCd - dt)
   self.invuln = math.max(0, self.invuln - dt)
   self.dropTimer = math.max(0, self.dropTimer - dt)
   self.comboTimer = math.max(0, self.comboTimer - dt)
@@ -229,12 +227,9 @@ function Player:update(dt)
     particles.dust(self.x + self.w / 2 - self.facing * 4, self.y + self.h, -self.facing, 1)
   end
 
-  -- Attacks --------------------------------------------------------------
+  -- Attack ---------------------------------------------------------------
   if input.pressed("attack") and self.attackCd <= 0 and self.dashTimer <= 0 then
     self:doMelee()
-  end
-  if input.pressed("special") and self.boltCd <= 0 then
-    self:doBolt()
   end
 
   -- afterimages decay
@@ -352,19 +347,18 @@ function Player:doMelee()
     dmg = dmg * (1 + self.run.custom.nextMeleeBonus)
   end
 
-  -- small lunge into the swing
-  if math.abs(math.cos(angle)) > 0.5 and self.dashTimer <= 0 then
-    self.vx = self.vx + math.cos(angle) * P.lungeSpeed
-  end
-
   local cx, cy = self:center()
   local hits = self.room:enemiesInArc(cx, cy, angle, range, P.attackArc)
   local anyHit = false
+  local downStrike = math.sin(angle) > 0.5
   for _, e in ipairs(hits) do
     anyHit = true
     local crit = love.math.random() < self:stat("critChance", 0)
     local final = crit and dmg * 2 or dmg
-    e:takeDamage(final, angle, self, { melee = true, crit = crit, finisher = isFinisher, combo = self.comboStep })
+    e:takeDamage(final, angle, self, {
+      melee = true, crit = crit, finisher = isFinisher, combo = self.comboStep,
+      downStrike = downStrike, airborne = not self.onGround,
+    })
   end
 
   -- pogo: down-strike on an enemy bounces the player
@@ -381,34 +375,6 @@ function Player:doMelee()
   end
   sfx.play(anyHit and "hit" or "swing", isFinisher and 1.25 or 1)
   signals.emit("playerAttack", self, self.comboStep, anyHit)
-end
-
-function Player:doBolt()
-  local cx, cy = self:center()
-  local target = self.room:nearestEnemy(cx, cy, P.boltRange * self:stat("rangeMult", 1))
-  local angle
-  if target then
-    local ex, ey = target:center()
-    angle = util.angle(cx, cy, ex, ey)
-  else
-    angle = self.facing > 0 and 0 or math.pi
-  end
-  self.boltCd = P.boltCooldown * self:stat("specialCooldownMult", 1)
-  local dmg = P.boltDamage * self:stat("damageMult", 1) * self:stat("boltDamageMult", 1)
-  self.room:spawnProjectile({
-    x = cx, y = cy,
-    vx = math.cos(angle) * P.boltSpeed,
-    vy = math.sin(angle) * P.boltSpeed,
-    friendly = true,
-    damage = dmg,
-    homing = target,
-    homingStrength = self:stat("boltHoming", 5),
-    color = self.character and self.character.boltColor or { 0.55, 0.9, 1.0 },
-    kind = "bolt",
-    pierce = self:stat("boltPierce", 0),
-  })
-  sfx.play("bolt")
-  signals.emit("playerBolt", self, target)
 end
 
 function Player:hurt(amount, fromX, fromY, ignoreInvuln)

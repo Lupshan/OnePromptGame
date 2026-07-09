@@ -10,7 +10,6 @@ local defaultKeyMap = {
   down = { "down", "s" },
   jump = { "space", "c", "k" },
   attack = { "x", "j" },
-  special = { "v", "l" },
   dash = { "lshift", "rshift", "z", "i" },
   interact = { "e", "up", "return" },
   pause = { "escape", "p" },
@@ -60,7 +59,6 @@ end
 local padMap = {
   jump = { "a" },
   attack = { "x" },
-  special = { "y" },
   dash = { "b", "rightshoulder" },
   interact = { "dpup", "a" },
   pause = { "start" },

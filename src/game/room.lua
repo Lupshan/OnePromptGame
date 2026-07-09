@@ -628,9 +628,9 @@ function Room:runShrineEvent(prop)
       end
     end
     outcomes[#outcomes + 1] = function()
-      -- mending covenant: strong heal now, shrine keeps your bolt briefly
+      -- mending covenant: strong heal now, the shrine holds your dash a while
       self.player:heal(math.floor(run:maxHP() * 0.3))
-      self.player.boltCd = 12
+      self.player.dashCd = 6
       sfx.play("heal")
       prop.resultText = locale.t("ui.room.shrine_mend")
     end

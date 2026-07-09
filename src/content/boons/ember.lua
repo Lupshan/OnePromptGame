@@ -26,22 +26,20 @@ return {
     end,
   },
   {
-    id = "ashen_bolt",
+    id = "heat_haze",
     family = "ember",
-    name = "Ashen Bolt",
-    flavor = "Cast fire. It knows the way.",
+    name = "Heat Haze",
+    flavor = "Strike where the air already trembles.",
     maxLevel = 3,
     desc = function(l, m)
-      return ("Your bolt deals +%d%% damage and ignites its target."):format(pct(0.25 * l * m))
+      return ("Your strikes deal +%d%% damage to burning enemies."):format(pct(0.15 * l * m))
     end,
     apply = function(run, ctx)
-      run:addMult("boltDamageMult", 0.25 * ctx.level * ctx.mult)
-      ctx.on("boltHit", function(projectile, enemy)
-        if not enemy.dead then
-          enemy:applyStatus("burn", {
-            time = 3, power = ctx.level * ctx.mult * run:stat("burnPower", 1),
-            source = run.currentRoom and run.currentRoom.player,
-          })
+      ctx.on("enemyDamaged", function(enemy, amount, meta, source)
+        if meta.melee and not meta.status and not meta.hazeProc
+           and enemy.status.burn and not enemy.dead then
+          enemy:takeDamage(amount * 0.15 * ctx.level * ctx.mult, nil, source,
+            { hazeProc = true, noHitstop = true, noKnockback = true })
         end
       end)
     end,

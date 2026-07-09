@@ -42,17 +42,13 @@ C.player = {
   invulnTime = 0.9,           -- after taking a hit
   contactDamage = 12,         -- damage taken from touching enemies (base)
 
+  -- One attack identity (iteration 02): a melee arc that chains with the
+  -- movement kit. No lunge -- the blade never fights the platforming.
   attackCooldown = 0.26,
   comboWindow = 0.55,
   attackDamage = 14,
   attackRange = 30,
   attackArc = 1.25,           -- radians half-angle of melee arc
-  lungeSpeed = 60,            -- small forward push when attacking
-
-  boltDamage = 10,
-  boltSpeed = 380,
-  boltCooldown = 0.85,
-  boltRange = 240,            -- auto-aim acquisition radius
 }
 
 -- Juice ---------------------------------------------------------------------

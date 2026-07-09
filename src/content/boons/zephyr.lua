@@ -75,16 +75,21 @@ return {
     end,
   },
   {
-    id = "windlass",
+    id = "skyfang",
     family = "zephyr",
-    name = "Windlass",
-    flavor = "The bow the storm strings itself.",
+    name = "Skyfang",
+    flavor = "The ground never sees the best cuts.",
     maxLevel = 3,
     desc = function(l, m)
-      return ("-%d%% bolt cooldown."):format(pct(0.12 * l * m))
+      return ("Airborne strikes deal +%d%% damage."):format(pct(0.12 * l * m))
     end,
     apply = function(run, ctx)
-      run:addMult("specialCooldownMult", -0.12 * ctx.level * ctx.mult)
+      ctx.on("enemyDamaged", function(enemy, amount, meta, source)
+        if meta.melee and meta.airborne and not meta.status and not meta.skyProc and not enemy.dead then
+          enemy:takeDamage(amount * 0.12 * ctx.level * ctx.mult, nil, source,
+            { skyProc = true, noHitstop = true, noKnockback = true })
+        end
+      end)
     end,
   },
   {

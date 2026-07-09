@@ -11,11 +11,12 @@ return {
     flavor = "Name a thing frail and watch it agree.",
     maxLevel = 3,
     desc = function(l, m)
-      return ("Your bolt Weakens enemies: they take +%d%% damage for 5s."):format(pct(0.15 * l * m))
+      return ("Your first strike on each enemy Weakens it: +%d%% damage taken for 5s."):format(pct(0.15 * l * m))
     end,
     apply = function(run, ctx)
-      ctx.on("boltHit", function(projectile, enemy)
-        if not enemy.dead then
+      ctx.on("enemyDamaged", function(enemy, amount, meta, source)
+        if meta.melee and not meta.status and not enemy._witherMarked and not enemy.dead then
+          enemy._witherMarked = true
           enemy:applyStatus("weaken", { time = 5, power = ctx.level * ctx.mult, maxPower = 4 })
         end
       end)

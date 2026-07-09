@@ -346,7 +346,6 @@ function rungame:smokeDrive(dt)
   p.vx = math.max(p.vx, 100)
   if p.onGround and (p.hitWall or love.math.random() < dt * 2) then p:doJump() end
   if love.math.random() < dt * 1.2 then p:doMelee() end
-  if love.math.random() < dt * 0.5 then p:doBolt() end
   if love.math.random() < dt * 0.4 and p.dashCd <= 0 then p:doDash(1) end
 
   -- survive: this is a systems tour, not a skill test

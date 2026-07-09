@@ -138,14 +138,17 @@ return {
     weight = 0.35,
     desc = function(l, m)
       _ = l
-      return ("+%d%% crit chance, and crits reset your bolt's cooldown."):format(pct(0.15 * m))
+      return ("+%d%% crit chance, and crits instantly refresh your dash."):format(pct(0.15 * m))
     end,
     apply = function(run, ctx)
       run:addFlat("critChance", 0.15 * ctx.mult)
       ctx.on("enemyDamaged", function(enemy, amount, meta)
         if meta.crit then
           local room = run.currentRoom
-          if room and room.player then room.player.boltCd = 0 end
+          if room and room.player then
+            room.player.dashCd = 0
+            room.player.dashAvailable = true
+          end
         end
       end)
     end,
