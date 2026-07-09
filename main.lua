@@ -27,6 +27,8 @@ function love.load(args)
   require("src.states.gameover")
   require("src.states.victory")
   require("src.states.charselect")
+  require("src.states.kiln")
+  require("src.states.codex")
 
   -- CLI: love . --seed 12345 jumps straight into a run with that seed
   local seed
@@ -44,11 +46,21 @@ function love.update(dt)
   dt = math.min(dt, 1 / 30) -- spiral-of-death guard
   save.get().stats.playTime = save.get().stats.playTime + dt
   state.update(dt)
+  -- smoke mode runs extra substeps so a full-game traversal finishes fast
+  if config.debug.smoke then
+    state.update(1 / 60)
+    state.update(1 / 60)
+  end
   input.endFrame()
 
   if config.debug.smoke then
     smoke.frames = smoke.frames + 1
     if smoke.script then smoke.script(smoke.frames) end
+    local interval = tonumber(os.getenv("CENDRE_SHOT_INTERVAL") or "") or 0
+    if config.debug.screenshotDir and interval > 0 and smoke.frames % interval == 0 then
+      local n = smoke.frames / interval
+      love.graphics.captureScreenshot(("shot_%04d.png"):format(n))
+    end
     if smoke.frames >= (tonumber(os.getenv("CENDRE_SMOKE_FRAMES") or "") or 180) then
       if config.debug.screenshotDir then
         love.graphics.captureScreenshot(function(id)

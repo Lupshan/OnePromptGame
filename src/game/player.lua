@@ -217,7 +217,7 @@ function Player:update(dt)
   -- Landing juice
   if self.onGround and not wasGrounded and prevVy > 120 then
     local hard = prevVy > 380
-    self.squashX, self.squashY = 1 + (hard and 0.35 or P.squashLandOr or 0.22), 1 - (hard and 0.3 or 0.18)
+    self.squashX, self.squashY = 1 + (hard and 0.35 or config.juice.squashLand), 1 - (hard and 0.3 or 0.18)
     particles.dust(self.x + self.w / 2, self.y + self.h, 0, hard and 8 or 4)
     sfx.play("land", hard and 1.0 or 0.6)
     if hard then juice.shake(1.6, 0.15) end
@@ -246,7 +246,11 @@ function Player:update(dt)
 
   -- Hazards ---------------------------------------------------------------
   if world:rectHitsTile(self.x, self.y, self.w, self.h, physics.SPIKE) then
-    self:hurt(18, self.x, self.y + 40, true)
+    self:hurt(14, self.x, self.y + 40)
+    -- pop out of the hazard so spikes can't chain-kill
+    self.vy = -300
+    self.jumping = false
+    self.dashTimer = 0
   end
   -- Kill plane: fell out of the room
   if self.y > world.heightPx + 60 then
@@ -262,7 +266,7 @@ function Player:doJump()
   self.jumping = true
   self.jumpBuf = 0
   self.coyote = 0 -- consumed: prevents phantom double jumps
-  self.squashX, self.squashY = 1 - P.squashJump, 1 + P.squashJump
+  self.squashX, self.squashY = 1 - config.juice.squashJump, 1 + config.juice.squashJump
   particles.dust(self.x + self.w / 2, self.y + self.h, 0, 3)
   sfx.play("jump")
   signals.emit("playerJump", self)
@@ -273,7 +277,7 @@ function Player:doAirJump()
   self.jumping = true
   self.jumpBuf = 0
   self.airJumpsUsed = self.airJumpsUsed + 1
-  self.squashX, self.squashY = 1 - P.squashJump, 1 + P.squashJump
+  self.squashX, self.squashY = 1 - config.juice.squashJump, 1 + config.juice.squashJump
   particles.ring(self.x + self.w / 2, self.y + self.h, { 0.7, 0.85, 1.0 }, 14)
   sfx.play("jump", 1.15)
   signals.emit("playerJump", self, true)
@@ -287,7 +291,7 @@ function Player:doWallJump(dir)
   self.jumpBuf = 0
   self.wallCoyote = 0
   self.hurtLock = math.max(self.hurtLock, P.wallJumpLockTime)
-  self.squashX, self.squashY = 1 - P.squashJump, 1 + P.squashJump
+  self.squashX, self.squashY = 1 - config.juice.squashJump, 1 + config.juice.squashJump
   particles.dust(self.x + (dir > 0 and 0 or self.w), self.y + self.h / 2, dir, 5)
   sfx.play("jump", 0.9)
   signals.emit("playerJump", self)
@@ -343,6 +347,10 @@ function Player:doMelee()
   local dmg = P.attackDamage * self:stat("damageMult", 1)
   local isFinisher = self.comboStep == 3
   if isFinisher then dmg = dmg * 1.6 end
+  -- one-shot bonuses (e.g. Momentum after a dash)
+  if self.run and self.run.custom.nextMeleeBonus then
+    dmg = dmg * (1 + self.run.custom.nextMeleeBonus)
+  end
 
   -- small lunge into the swing
   if math.abs(math.cos(angle)) > 0.5 and self.dashTimer <= 0 then
@@ -369,6 +377,7 @@ function Player:doMelee()
   if anyHit then
     juice.hitstop(isFinisher and config.juice.hitstopHeavy or config.juice.hitstopLight)
     juice.shake(isFinisher and config.juice.shakeHeavy or config.juice.shakeLight, 0.18)
+    if self.run then self.run.custom.nextMeleeBonus = nil end
   end
   sfx.play(anyHit and "hit" or "swing", isFinisher and 1.25 or 1)
   signals.emit("playerAttack", self, self.comboStep, anyHit)
@@ -440,6 +449,7 @@ function Player:hurt(amount, fromX, fromY, ignoreInvuln)
 end
 
 function Player:heal(amount)
+  amount = math.floor(amount * self:stat("healingMult", 1) + 0.5)
   local before = self:hp()
   self:setHP(before + amount)
   local gained = self:hp() - before

@@ -49,6 +49,7 @@ function Enemy.new(def, room, x, y, opts)
   self.homeX, self.homeY = self.x, self.y
   self.noGravity = def.flying or false
   self.telegraph = 0
+  require("src.core.save").markSeen((def.phases and "boss:" or "enemy:") .. def.id)
   return self
 end
 

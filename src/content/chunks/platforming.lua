@@ -145,6 +145,7 @@ return {
   },
   {
     id = "plat_spike_run",
+    unlock = "chunks_advanced",
     kind = "platform",
     entry = "low", exit = "low",
     difficulty = 3,
@@ -229,6 +230,7 @@ return {
   },
   {
     id = "plat_hover_gauntlet",
+    unlock = "chunks_advanced",
     kind = "platform",
     entry = "low", exit = "low",
     difficulty = 3,

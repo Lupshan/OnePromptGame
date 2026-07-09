@@ -88,6 +88,7 @@ return {
   },
   {
     id = "arena_pit_center",
+    unlock = "chunks_advanced",
     kind = "combat",
     entry = "low", exit = "low",
     difficulty = 3,
