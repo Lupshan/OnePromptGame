@@ -222,7 +222,9 @@ function Room:buildWaves(streamName, elite)
   if elite and #self.waves > 0 then
     local lastWave = self.waves[#self.waves]
     if #lastWave > 0 then
-      lastWave[rng:random(streamName, 1, #lastWave)].elite = true
+      local pick = lastWave[rng:random(streamName, 1, #lastWave)]
+      pick.elite = true
+      pick.eliteMod = rng:pick(streamName, { "volatile", "regenerating", "vampiric", "stormtouched" })
     end
   end
 end
@@ -235,6 +237,7 @@ function Room:nextWave()
     -- telegraphed spawn: portal effect, enemy appears after a beat
     self.pendingSpawns[#self.pendingSpawns + 1] = {
       def = spawn.def, x = spawn.x, y = spawn.y, elite = spawn.elite,
+      eliteMod = spawn.eliteMod,
       timer = 0.55 + love.math.random() * 0.3,
     }
   end
@@ -421,7 +424,7 @@ function Room:update(dt)
     end
     if s.timer <= 0 then
       s.dead = true
-      local e = Enemy.new(s.def, self, s.x, s.y, { elite = s.elite })
+      local e = Enemy.new(s.def, self, s.x, s.y, { elite = s.elite, eliteMod = s.eliteMod })
       self.enemies[#self.enemies + 1] = e
       particles.ring(s.x, s.y - 8, self.biome.palette.accent, 18)
     end
@@ -562,31 +565,76 @@ function Room:useProp(prop)
   end
 end
 
--- Shrine events: small gambles. Kept modest; each is clearly telegraphed
--- by its result text.
+-- Shrine events: small gambles, clearly telegraphed by their result text.
+-- The "Listening Stones" unlock widens the outcome table.
 function Room:runShrineEvent(prop)
   local run = self.run
-  local roll = love.math.random()
   local px, py = prop.x, prop.y - 12
-  if roll < 0.34 then
-    -- blood price: lose hp, gain a boon
-    local cost = math.floor(run:maxHP() * 0.15)
-    run.hp = math.max(1, run.hp - cost)
-    particles.burst(px, py, { 1, 0.3, 0.35 }, 12, { speed = 90 })
-    sfx.play("playerHurt", 0.7)
-    if self.callbacks.onSigil then self.callbacks.onSigil({}) end
-    prop.resultText = "The shrine takes " .. cost .. " blood. It gives back power."
-  elseif roll < 0.67 then
-    -- ember windfall
-    self.pickups:spawnBurst("ember", px, py, 10, 5)
-    sfx.play("pickup")
-    prop.resultText = "The shrine hums. Embers spill out."
-  else
-    -- cinder gift
-    self.pickups:spawnBurst("cinder", px, py, 3, 4)
-    sfx.play("cinder")
-    prop.resultText = "Something old approves. Cinders remain."
+  local outcomes = {
+    function()
+      -- blood price: lose hp, gain a boon
+      local cost = math.floor(run:maxHP() * 0.15)
+      run.hp = math.max(1, run.hp - cost)
+      particles.burst(px, py, { 1, 0.3, 0.35 }, 12, { speed = 90 })
+      sfx.play("playerHurt", 0.7)
+      if self.callbacks.onSigil then self.callbacks.onSigil({}) end
+      prop.resultText = "The shrine takes " .. cost .. " blood. It gives back power."
+    end,
+    function()
+      self.pickups:spawnBurst("ember", px, py, 10, 5)
+      sfx.play("pickup")
+      prop.resultText = "The shrine hums. Embers spill out."
+    end,
+    function()
+      self.pickups:spawnBurst("cinder", px, py, 3, 4)
+      sfx.play("cinder")
+      prop.resultText = "Something old approves. Cinders remain."
+    end,
+  }
+  if save.isUnlocked("shrine_events") then
+    outcomes[#outcomes + 1] = function()
+      -- deepening ritual: a random owned boon grows a level
+      local boonsSys = require("src.game.boons")
+      local candidates = {}
+      for _, owned in ipairs(run.boons) do
+        local def = boonsSys.def(owned.id)
+        if def and owned.level < (def.maxLevel or 3) then candidates[#candidates + 1] = owned end
+      end
+      if #candidates > 0 then
+        local pick = candidates[love.math.random(1, #candidates)]
+        boonsSys.grant(run, pick.id, pick.rarity)
+        local def = boonsSys.def(pick.id)
+        particles.ring(px, py, { 1, 0.85, 0.4 }, 40)
+        sfx.play("boon")
+        prop.resultText = "The stones listen. " .. (def and def.name or "A gift") .. " deepens."
+      else
+        self.pickups:spawnBurst("ember", px, py, 8, 5)
+        prop.resultText = "The stones find nothing to deepen. Embers, then."
+      end
+    end
+    outcomes[#outcomes + 1] = function()
+      -- greed gamble: double or half your embers
+      if love.math.random() < 0.5 then
+        local gain = math.max(20, run.embers)
+        run:addEmbers(gain)
+        sfx.play("pickup")
+        prop.resultText = "The shrine matches your purse. +" .. gain .. " embers."
+      else
+        local loss = math.floor(run.embers / 2)
+        run.embers = run.embers - loss
+        sfx.play("uiDeny")
+        prop.resultText = "The shrine laughs. " .. loss .. " embers gone."
+      end
+    end
+    outcomes[#outcomes + 1] = function()
+      -- mending covenant: strong heal now, shrine keeps your bolt briefly
+      self.player:heal(math.floor(run:maxHP() * 0.3))
+      self.player.boltCd = 12
+      sfx.play("heal")
+      prop.resultText = "It mends you, and borrows your bolt a while."
+    end
   end
+  outcomes[love.math.random(1, #outcomes)]()
 end
 
 -- Drawing ---------------------------------------------------------------------------

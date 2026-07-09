@@ -10,7 +10,7 @@ local RNG = require("src.core.rng")
 
 -- register chunk content only (enemies/boons not needed here)
 local function loadChunks()
-  for _, file in ipairs({ "basic", "platforming", "combat", "special" }) do
+  for _, file in ipairs({ "basic", "platforming", "combat", "special", "expansion" }) do
     local defs = require("src.content.chunks." .. file)
     for _, d in ipairs(defs) do registry.add("chunk", d) end
   end
@@ -33,7 +33,7 @@ print(("OK: %d chunks parse"):format(nChunks))
 -- 2. generation across seeds
 local numSeeds = tonumber(arg and arg[1]) or 60
 local types = { "combat", "platform", "treasure", "rest", "shop", "boss", "event" }
-local biomes = { "ashfall", "duskmire", "hollow_spire" }
+local biomes = { "ashfall", "duskmire", "ember_sea", "hollow_spire" }
 local total, fallbacks, attemptsSum = 0, 0, 0
 for seed = 1, numSeeds do
   local rng = RNG.new(seed * 7919 + 13)

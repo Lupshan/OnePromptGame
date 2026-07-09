@@ -189,18 +189,14 @@ function rungame:update(dt)
   end
 
   if self.mode == "paused" then
-    if input.pressed("pause") or input.pressed("cancel") then
-      input.consume("pause") input.consume("cancel")
-      self.mode = "room"
-    elseif input.pressed("map") then
-      state.switch("title")
-    end
+    self:updatePause()
     return
   end
 
   if input.pressed("pause") then
     input.consume("pause")
     self.mode = "paused"
+    self.pauseSel = 1
     return
   end
 
@@ -244,6 +240,92 @@ function rungame:update(dt)
   end
 end
 
+-- Pause menu: resume, live settings, abandon.
+local PAUSE_ITEMS = { "Resume", "Music volume", "Sound volume", "Screen shake", "Abandon run" }
+
+function rungame:updatePause()
+  local settings = save.get().settings
+  self.pauseSel = self.pauseSel or 1
+
+  if input.pressed("pause") or input.pressed("cancel") then
+    input.consume("pause") input.consume("cancel")
+    save.write()
+    self.mode = "room"
+    return
+  end
+  if input.pressed("up") then
+    self.pauseSel = self.pauseSel > 1 and self.pauseSel - 1 or #PAUSE_ITEMS
+    sfx.play("uiMove")
+  elseif input.pressed("down") then
+    self.pauseSel = self.pauseSel < #PAUSE_ITEMS and self.pauseSel + 1 or 1
+    sfx.play("uiMove")
+  end
+
+  local item = PAUSE_ITEMS[self.pauseSel]
+  local delta = 0
+  if input.pressed("left") then delta = -0.1 end
+  if input.pressed("right") then delta = 0.1 end
+  if delta ~= 0 then
+    local util = require("src.core.util")
+    if item == "Music volume" then
+      settings.musicVolume = util.clamp((settings.musicVolume or 0.7) + delta, 0, 1)
+      music.applyVolume()
+    elseif item == "Sound volume" then
+      settings.sfxVolume = util.clamp((settings.sfxVolume or 0.8) + delta, 0, 1)
+      sfx.play("uiSelect")
+    elseif item == "Screen shake" then
+      settings.screenShake = util.clamp((settings.screenShake or 1) + delta, 0, 1.5)
+    end
+  end
+
+  if input.pressed("confirm") then
+    input.consume("confirm")
+    if item == "Resume" then
+      save.write()
+      self.mode = "room"
+    elseif item == "Abandon run" then
+      save.write()
+      state.switch("title")
+    end
+  end
+end
+
+function rungame:drawPause()
+  local sw, sh = love.graphics.getDimensions()
+  local settings = save.get().settings
+  love.graphics.setColor(0.02, 0.02, 0.05, 0.85)
+  love.graphics.rectangle("fill", 0, 0, sw, sh)
+  draw.textCentered("PAUSED", sw / 2, sh * 0.22, 30, { 1, 1, 1, 1 })
+
+  local values = {
+    ["Music volume"] = math.floor((settings.musicVolume or 0.7) * 100 + 0.5) .. "%",
+    ["Sound volume"] = math.floor((settings.sfxVolume or 0.8) * 100 + 0.5) .. "%",
+    ["Screen shake"] = math.floor((settings.screenShake or 1) * 100 + 0.5) .. "%",
+  }
+  local y0 = sh * 0.36
+  for i, item in ipairs(PAUSE_ITEMS) do
+    local selected = i == self.pauseSel
+    local y = y0 + (i - 1) * 34
+    local label = item
+    if values[item] then label = item .. "   < " .. values[item] .. " >" end
+    if selected then
+      draw.textCentered(">", sw / 2 - draw.textWidth(label, 16) / 2 - 20, y + 2, 12, { 1, 0.55, 0.25, 1 })
+    end
+    draw.textCentered(label, sw / 2, y, 16, selected and { 1, 1, 1, 1 } or { 1, 1, 1, 0.5 })
+  end
+
+  -- current build summary
+  local boonList = {}
+  for _, owned in ipairs(self.run.boons) do
+    local def = boonsSys.def(owned.id)
+    if def then boonList[#boonList + 1] = def.name .. " " .. owned.level end
+  end
+  if #boonList > 0 then
+    draw.text(table.concat(boonList, "  ·  "), sw * 0.1, sh - 70, 10,
+      { 1, 1, 1, 0.45 }, "center", sw * 0.8)
+  end
+end
+
 -- Autopilot used only in CENDRE_SMOKE=1 headless runs. It cheats (culls
 -- enemies, teleports to the exit) because its job is to traverse EVERY
 -- system -- rooms, waves, bosses, boons, map, biome transitions, victory --
@@ -262,7 +344,7 @@ function rungame:smokeDrive(dt)
   if love.math.random() < dt * 0.4 and p.dashCd <= 0 then p:doDash(1) end
 
   -- survive: this is a systems tour, not a skill test
-  if self.run.hp < 30 then self.run.hp = self.run:maxHP() end
+  if self.run.hp < 65 then self.run.hp = self.run:maxHP() end
 
   -- cull enemies so objectives progress
   self.smokeKillT = (self.smokeKillT or 0) + dt
@@ -324,18 +406,7 @@ function rungame:draw()
   end
 
   if self.mode == "paused" then
-    love.graphics.setColor(0.02, 0.02, 0.05, 0.8)
-    love.graphics.rectangle("fill", 0, 0, sw, sh)
-    draw.textCentered("PAUSED", sw / 2, sh * 0.35, 30, { 1, 1, 1, 1 })
-    draw.textCentered("[ESC] resume      [TAB] abandon run", sw / 2, sh * 0.35 + 50, 13, { 1, 1, 1, 0.6 })
-    local boonList = {}
-    for _, owned in ipairs(self.run.boons) do
-      local def = boonsSys.def(owned.id)
-      if def then boonList[#boonList + 1] = def.name .. " " .. owned.level end
-    end
-    if #boonList > 0 then
-      draw.textCentered(table.concat(boonList, "  ·  "), sw / 2, sh * 0.35 + 90, 11, { 1, 1, 1, 0.45 })
-    end
+    self:drawPause()
   end
 
   love.graphics.setColor(1, 1, 1, 1)

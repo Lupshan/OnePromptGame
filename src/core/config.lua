@@ -67,7 +67,7 @@ C.juice = {
 
 -- Run structure ---------------------------------------------------------------
 C.run = {
-  biomesPerRun = 3,          -- biomes traversed before the final boss
+  biomesPerRun = 4,          -- biomes traversed before the final boss
   graphLayers = 6,           -- node layers per biome (before boss layer)
   graphMinWidth = 2,
   graphMaxWidth = 4,

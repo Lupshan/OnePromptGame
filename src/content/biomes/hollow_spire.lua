@@ -3,7 +3,7 @@ return {
   id = "hollow_spire",
   name = "The Hollow Spire",
   tagline = "It still holds the sky up. Barely.",
-  order = 3,
+  order = 4,
   boss = "last_warden",
 
   palette = {
@@ -25,6 +25,7 @@ return {
 
   enemyWeights = {
     sentinel = 3, warden_husk = 3, echo = 3, dervish = 3,
+    gilded_watcher = 2, warden_shield = 2, ember_skirmisher = 2,
     willowisp = 1,
   },
 

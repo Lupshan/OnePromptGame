@@ -25,6 +25,7 @@ return {
 
   enemyWeights = {         -- which enemies favor this biome (id -> weight)
     cinderling = 4, ashmite = 3, emberfly = 3, pyre_totem = 2,
+    soot_hulk = 2, ash_hound = 2, splitter = 2,
   },
 
   hazard = "spikes",

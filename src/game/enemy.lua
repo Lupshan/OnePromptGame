@@ -16,7 +16,7 @@ Enemy.__index = Enemy
 -- Depth scaling: enemies get tougher deeper into the run (this is world
 -- scaling, not player power -- the player's power comes only from boons).
 local function depthScale(depth)
-  return 1 + (depth or 0) * 0.16
+  return math.min(1 + (depth or 0) * 0.16, 4.2)
 end
 
 function Enemy.new(def, room, x, y, opts)
@@ -35,9 +35,11 @@ function Enemy.new(def, room, x, y, opts)
   local scale = depthScale(depth)
   self.maxHP = (def.hp or 30) * scale * (opts.elite and 2.6 or 1)
   self.hp = self.maxHP
-  self.damage = (def.damage or 10) * (1 + depth * 0.08) * (opts.elite and 1.5 or 1)
+  self.damage = (def.damage or 10) * math.min(1 + depth * 0.06, 2.4) * (opts.elite and 1.5 or 1)
   self.elite = opts.elite or false
+  self.eliteMod = opts.eliteMod -- volatile | regenerating | vampiric | stormtouched
   self.speed = (def.speed or 40) * (opts.elite and 1.2 or 1)
+  self.stormTimer = 2
 
   self.state = "idle"
   self.stateTime = 0
@@ -78,6 +80,13 @@ end
 -- Status effects ---------------------------------------------------------------
 
 function Enemy:applyStatus(kind, data)
+  -- Slow Roast etc: player-side modifiers on status durations
+  if kind == "burn" then
+    local run = self.room.run
+    if run and run.custom.burnTimeMult then
+      data.time = (data.time or 3) * run.custom.burnTimeMult
+    end
+  end
   local s = self.status[kind]
   if s then
     -- refresh & stack modestly (capped: no infinite stacking)
@@ -183,6 +192,35 @@ function Enemy:die(source, meta)
   self.dead = true
   local cx, cy = self:center()
   local col = self.def.color or { 1, 0.5, 0.3 }
+  meta = meta or {}
+
+  if not meta.cleanup then
+    -- splitters: death spawns children
+    if self.def.splitsInto then
+      local registry = require("src.game.registry")
+      local childDef = registry.get("enemy", self.def.splitsInto.id)
+      if childDef then
+        for i = 1, self.def.splitsInto.count do
+          self.room.pendingSpawns[#self.room.pendingSpawns + 1] = {
+            def = childDef, x = cx + (i - 1.5) * 18, y = self.y + self.h, timer = 0.4,
+          }
+        end
+      end
+    end
+    -- volatile elites: dying burst of slow orbs, well telegraphed by the ring
+    if self.eliteMod == "volatile" then
+      particles.ring(cx, cy, { 1, 0.6, 0.2 }, 50)
+      for i = 0, 5 do
+        local a = i / 6 * math.pi * 2
+        self.room:spawnProjectile({
+          x = cx, y = cy, vx = math.cos(a) * 90, vy = math.sin(a) * 90,
+          damage = self.damage * 0.8, friendly = false,
+          color = { 1, 0.55, 0.2 }, kind = "orb", r = 3.5, life = 1.6,
+        })
+      end
+      sfx.play("explosion", 1.1, 0.7)
+    end
+  end
   particles.burst(cx, cy, col, self.elite and 22 or 12, { speed = 130, glow = 8 })
   particles.ring(cx, cy, col, self.elite and 34 or 22)
   juice.hitstop(self.elite and config.juice.hitstopHeavy or 0.05)
@@ -465,6 +503,28 @@ function Enemy:update(dt)
   self.hitFlash = math.max(0, self.hitFlash - dt)
   self:updateStatus(dt)
 
+  -- elite modifiers
+  if self.eliteMod == "regenerating" and self.hp < self.maxHP then
+    self.hp = math.min(self.maxHP, self.hp + self.maxHP * 0.025 * dt)
+  elseif self.eliteMod == "stormtouched" then
+    self.stormTimer = self.stormTimer - dt
+    if self.stormTimer <= 0 then
+      self.stormTimer = 3.2
+      local p = self.room.player
+      if p and not p.dead then
+        local cx, cy = self:center()
+        local px, py = p:center()
+        local a = util.angle(cx, cy, px, py)
+        self.room:spawnProjectile({
+          x = cx, y = cy, vx = math.cos(a) * 140, vy = math.sin(a) * 140,
+          damage = self.damage * 0.6, friendly = false,
+          color = { 1, 0.95, 0.5 }, kind = "orb", r = 3, life = 3,
+        })
+        sfx.play("zap", 0.8, 0.5)
+      end
+    end
+  end
+
   local b = behaviors[self.def.behavior or "walker"]
   if b then b(self, dt) end
 
@@ -472,7 +532,17 @@ function Enemy:update(dt)
   local p = self.room.player
   if p and not p.dead and not self.def.noContactDamage then
     if util.aabb(self.x, self.y, self.w, self.h, p.x, p.y, p.w, p.h) then
+      local before = p.invuln
       p:hurt(self.damage, self:center())
+      -- leeches and vampiric elites feed on landed hits
+      if p.invuln > before then
+        local gain = (self.def.healsOnHit or 0) + (self.eliteMod == "vampiric" and self.maxHP * 0.1 or 0)
+        if gain > 0 then
+          self.hp = math.min(self.maxHP, self.hp + gain)
+          particles.burst(self:center(), select(2, self:center()), { 0.9, 0.3, 0.5 }, 5,
+            { speed = 40, gravity = -60 })
+        end
+      end
     end
   end
 end

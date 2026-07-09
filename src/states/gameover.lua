@@ -11,7 +11,10 @@ local gameover = {}
 function gameover:enter(run)
   self.run = run
   self.t = 0
-  if require("src.core.config").debug.smoke then print("[smoke] GAMEOVER") end
+  if require("src.core.config").debug.smoke then
+    print("[smoke] GAMEOVER")
+    love.event.quit()
+  end
   music.setMood({
     key = "gameover", root = 82, scale = "minor", tempo = 46,
     layers = { "drone", "melody" }, intensity = 0.7, seed = 13,

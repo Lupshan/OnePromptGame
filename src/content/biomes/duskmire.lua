@@ -25,6 +25,7 @@ return {
 
   enemyWeights = {
     bogshade = 4, spitter = 3, willowisp = 3, shellback = 2,
+    mire_maw = 2, mortar_shell = 2, leech_wisp = 2,
     ashmite = 1, -- stragglers from above
   },
 

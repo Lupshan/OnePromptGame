@@ -14,7 +14,10 @@ local VICTORY_BONUS = 60
 function victory:enter(run)
   self.run = run
   self.t = 0
-  if require("src.core.config").debug.smoke then print("[smoke] VICTORY") end
+  if require("src.core.config").debug.smoke then
+    print("[smoke] VICTORY")
+    love.event.quit()
+  end
   save.stat("victories", 1)
   local st = save.get().stats
   st.bestBiome = math.max(st.bestBiome or 0, run.biomeIndex)
