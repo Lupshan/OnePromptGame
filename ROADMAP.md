@@ -11,10 +11,11 @@ CENDRE_SMOKE=1 CENDRE_SMOKE_FRAMES=32000 xvfb-run love .
 # expect: "[smoke] VICTORY" in output, no Error/traceback
 ```
 
-## Status: COMPLETE PLAYABLE LOOP ✅ (session 1)
+## Status: COMPLETE PLAYABLE LOOP + FIRST EXPANSION ✅ (session 1)
 
-Title → charselect → run (3 biomes × ~7 rooms + boss each) → death/victory →
-cinders → Kiln unlocks → new run. Verified end-to-end by autopilot traversal.
+Title → charselect → run (4 biomes × ~7 rooms + boss each) → death/victory →
+cinders → Kiln unlocks → new run. Verified end-to-end by autopilot traversal
+(latest check: 29 rooms, 4 bosses, VICTORY, zero errors, zero fallback rooms).
 
 ## Done
 
@@ -43,29 +44,34 @@ cinders → Kiln unlocks → new run. Verified end-to-end by autopilot traversal
 - [x] Tests: headless gen test (luajit-only), full-game smoke autopilot (reaches VICTORY)
 - [x] README with extension guide; this roadmap
 
+### Session 1, expansion pass (same day)
+- [x] Biome 4: The Ember Sea (order 3; Hollow Spire is now the 4th, final biome)
+- [x] Boss 4: Tide of Coals (dive/erupt, coal rain, floor skimmers)
+- [x] +6 enemies (ash_hound, splitter, mortar_shell, leech_wisp, warden_shield, ember_skirmisher)
+      with new engine mechanics: split-on-death, heal-on-hit
+- [x] Elite modifiers: volatile / regenerating / vampiric / stormtouched
+- [x] +15 chunks (new entries/exits, arenas, first biome-restricted set) — 0 fallbacks/1890 rooms
+- [x] +12 boons: all 15 family pairs now have duo payoffs; new legendary (Glasswing);
+      burn-duration support (Slow Roast) wired into the status engine
+- [x] Depth scaling capped for 4-biome length (hp <=4.2x, damage <=2.4x)
+- [x] Shrine outcome table deepens behind the Listening Stones unlock
+- [x] Pause menu with live settings (music/sfx volume, screen shake, abandon)
+
 ## Next up (session 2+, in rough priority order)
 
-Widen and deepen — the loop is done, so everything below is additive content
-or polish. Keep every addition coherent with the existing loop.
+Widen and deepen — keep every addition coherent with the existing loop.
 
-- [ ] **Content: more enemies** (aim +6–10: ranged skirmisher, shielder that guards allies,
-      splitter that spawns mites on death, mortar, leech that heals off the player...)
-- [ ] **Content: more chunks** (aim +15–20: vertical shafts using mid/high doors,
-      one-way descent chunks, hazard-dense unlockable set, biome-restricted chunks)
-- [ ] **Content: more boons** (aim +15: remaining duo pairs (ember×zephyr, tempest×verdance,
-      tempest×aegis, gloom×verdance, aegis×zephyr), more legendaries, bolt-build depth)
-- [ ] **Content: biome 4 "The Ember Sea"** + boss (extends run length option; consider
-      making biomesPerRun selectable 3/4 as an unlock — content, not power)
-- [ ] **Elite modifiers** (volatile: explodes; frostbound: chills on hit; vampiric...)
-      instead of plain stat-up elites
-- [ ] **Miniboss/event depth**: shrine event table expansion behind `shrine_events` unlock
-      (currently unlock exists; wire richer outcomes when it's owned)
-- [ ] **Weapon variety per character** (alt melee arcs / bolt patterns as unlockable kits)
-- [ ] **Room objectives variety**: survive-the-timer, protect-the-ember, no-ground challenge rooms
-- [ ] **Pause menu settings**: volume sliders, screenshake toggle wiring (save.settings exists)
 - [ ] **Heat/ascension system**: post-victory difficulty modifiers (unlock-gated, opt-in;
       difficulty up, never player power up — respects the no-power-creep rule)
+- [ ] **Room objectives variety**: survive-the-timer, protect-the-ember, no-ground challenge rooms
+- [ ] **Weapon variety per character** (alt melee arcs / bolt patterns as unlockable kits)
+- [ ] **More chunks: vertical shafts** using mid/high door heights (generator currently
+      only carves low doors — extend carveDoor + chunk entry/exit plumbing first)
+- [ ] **More enemies** (guardian that shields allies, burrower, mirror-image caster...)
+- [ ] **More boons**: bolt-build depth (multi-shot, ricochet), boon-count synergies
+- [ ] **Minibosses** mid-biome (elite++ with one boss pattern each)
 - [ ] **Codex depth**: per-entry detail pane, kill counts, boon synergy hints
+- [ ] **Daily seed mode** (fixed seed of the day + simple local leaderboard)
 - [ ] **Performance pass**: particle caps under load, room draw batching (fine so far)
 - [ ] **Steam wrap**: luasteam bindings, achievements list, cloud save of profile.lua
 
