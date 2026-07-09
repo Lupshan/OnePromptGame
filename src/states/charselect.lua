@@ -5,6 +5,7 @@ local input = require("src.core.input")
 local registry = require("src.game.registry")
 local save = require("src.core.save")
 local sfx = require("src.audio.sfx")
+local locale = require("src.core.locale")
 
 local charselect = {}
 
@@ -55,7 +56,7 @@ function charselect:draw()
   local sw, sh = love.graphics.getDimensions()
   draw.gradientV(0, 0, sw, sh, { 0.05, 0.03, 0.07 }, { 0.12, 0.07, 0.09 })
 
-  draw.textCentered("CHOOSE YOUR REMNANT", sw / 2, sh * 0.1, 26, { 1, 0.92, 0.8, 1 })
+  draw.textCentered(locale.t("ui.charselect.header"), sw / 2, sh * 0.1, 26, { 1, 0.92, 0.8, 1 })
 
   local n = #self.chars
   local cardW, cardH = 200, 270
@@ -94,20 +95,23 @@ function charselect:draw()
       love.graphics.rectangle("fill", fx + 1.4, fy - 12, 2.6, 3)
     end
 
-    draw.textCentered(locked and "???" or c.name, x + cardW / 2, y + 128, 15, { 1, 1, 1, locked and 0.5 or 1 })
-    draw.textCentered(locked and "" or (c.epithet or ""), x + cardW / 2, y + 148, 10,
+    local cname = locale.content("characters", c.id, "name", c.name)
+    local cepithet = locale.content("characters", c.id, "epithet", c.epithet or "")
+    local cdesc = locale.content("characters", c.id, "desc", c.desc or "")
+    draw.textCentered(locked and locale.t("ui.charselect.sealedName") or cname,
+      x + cardW / 2, y + 128, 15, { 1, 1, 1, locked and 0.5 or 1 })
+    draw.textCentered(locked and "" or cepithet, x + cardW / 2, y + 148, 10,
       { gc[1], gc[2], gc[3], 0.8 })
 
     if locked then
-      draw.text("Sealed.\n\nLight this wraith at the Kiln.", x + 16, y + 176, 11,
+      draw.text(locale.t("ui.charselect.sealedHint"), x + 16, y + 176, 11,
         { 1, 1, 1, 0.45 }, "center", cardW - 32)
     else
-      draw.text(c.desc or "", x + 16, y + 170, 11, { 0.92, 0.93, 0.98, 0.9 }, "center", cardW - 32)
+      draw.text(cdesc, x + 16, y + 170, 11, { 0.92, 0.93, 0.98, 0.9 }, "center", cardW - 32)
     end
   end
 
-  draw.textCentered("<- -> choose · SPACE begin · ESC back",
-    sw / 2, sh - 48, 12, { 1, 1, 1, 0.5 })
+  draw.textCentered(locale.t("ui.charselect.footer"), sw / 2, sh - 48, 12, { 1, 1, 1, 0.5 })
   love.graphics.setColor(1, 1, 1, 1)
 end
 

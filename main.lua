@@ -16,6 +16,7 @@ function love.load(args)
   love.graphics.setDefaultFilter("nearest", "nearest")
   love.graphics.setLineStyle("smooth")
   save.load()
+  require("src.core.locale").init()
   draw.load()
   sfx.load()
   music.load()
@@ -29,6 +30,8 @@ function love.load(args)
   require("src.states.charselect")
   require("src.states.kiln")
   require("src.states.codex")
+  require("src.states.options")
+  require("src.states.help")
 
   -- CLI: love . --seed 12345 jumps straight into a run with that seed
   local seed

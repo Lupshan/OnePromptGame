@@ -5,10 +5,11 @@ local input = require("src.core.input")
 local registry = require("src.game.registry")
 local save = require("src.core.save")
 local sfx = require("src.audio.sfx")
+local locale = require("src.core.locale")
 
 local codex = {}
 
-local TABS = { "Enemies", "Boons", "Wardens" }
+local TABS = { "enemies", "boons", "wardens" }
 
 function codex:enter()
   local reg = require("src.game.registry")
@@ -25,7 +26,11 @@ local function entries(tab)
   if tab == 1 then
     local out = {}
     for _, e in ipairs(registry.all("enemy")) do
-      out[#out + 1] = { name = e.name, desc = e.desc, seen = save.get().seen["enemy:" .. e.id] }
+      out[#out + 1] = {
+        name = locale.content("enemies", e.id, "name", e.name),
+        desc = locale.content("enemies", e.id, "desc", e.desc),
+        seen = save.get().seen["enemy:" .. e.id],
+      }
     end
     return out
   elseif tab == 2 then
@@ -34,8 +39,8 @@ local function entries(tab)
     for _, b in ipairs(registry.all("boon")) do
       local fam = boonsSys.family(b.family)
       out[#out + 1] = {
-        name = b.name, desc = b.flavor,
-        tag = fam and fam.name or "", color = fam and fam.color,
+        name = boonsSys.name(b), desc = boonsSys.flavor(b),
+        tag = boonsSys.familyName(fam), color = fam and fam.color,
         seen = save.get().seen["boon:" .. b.id],
       }
     end
@@ -43,7 +48,11 @@ local function entries(tab)
   else
     local out = {}
     for _, b in ipairs(registry.all("boss")) do
-      out[#out + 1] = { name = b.name, desc = b.title, seen = save.get().seen["boss:" .. b.id] }
+      out[#out + 1] = {
+        name = locale.content("bosses", b.id, "name", b.name),
+        desc = locale.content("bosses", b.id, "title", b.title),
+        seen = save.get().seen["boss:" .. b.id],
+      }
     end
     return out
   end
@@ -73,21 +82,21 @@ function codex:draw()
   local sw, sh = love.graphics.getDimensions()
   draw.gradientV(0, 0, sw, sh, { 0.04, 0.03, 0.07 }, { 0.1, 0.08, 0.11 })
 
-  draw.textCentered("CODEX", sw / 2, sh * 0.05, 28, { 1, 0.92, 0.8, 1 })
+  draw.textCentered(locale.t("ui.codex.header"), sw / 2, sh * 0.05, 28, { 1, 0.92, 0.8, 1 })
 
   -- tabs
   local tw = 140
   local x0 = sw / 2 - (#TABS * tw) / 2
   for i, tab in ipairs(TABS) do
     local selected = i == self.tab
-    draw.textCentered(tab, x0 + (i - 0.5) * tw, sh * 0.13, 15,
+    draw.textCentered(locale.t("ui.codex.tab_" .. tab), x0 + (i - 0.5) * tw, sh * 0.13, 15,
       selected and { 1, 0.75, 0.4, 1 } or { 1, 1, 1, 0.4 })
   end
 
   local list = entries(self.tab)
   local seenCount = 0
   for _, e in ipairs(list) do if e.seen then seenCount = seenCount + 1 end end
-  draw.textCentered(("%d / %d witnessed"):format(seenCount, #list), sw / 2, sh * 0.13 + 26, 10,
+  draw.textCentered(locale.f("ui.codex.witnessed", seenCount, #list), sw / 2, sh * 0.13 + 26, 10,
     { 1, 1, 1, 0.4 })
 
   local rowH = 40
@@ -113,11 +122,11 @@ function codex:draw()
     else
       love.graphics.setColor(0.5, 0.5, 0.55, 0.4)
       draw.diamond("line", xx + 16, y + (rowH - 6) / 2, 5)
-      draw.text("— unwitnessed —", xx + 32, y + 10, 12, { 1, 1, 1, 0.25 })
+      draw.text(locale.t("ui.codex.unwitnessed"), xx + 32, y + 10, 12, { 1, 1, 1, 0.25 })
     end
   end
 
-  draw.textCentered("<- -> tabs · up/down scroll · ESC back", sw / 2, sh - 40, 12, { 1, 1, 1, 0.5 })
+  draw.textCentered(locale.t("ui.codex.footer"), sw / 2, sh - 40, 12, { 1, 1, 1, 0.5 })
   love.graphics.setColor(1, 1, 1, 1)
 end
 

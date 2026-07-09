@@ -7,10 +7,11 @@ local music = require("src.audio.music")
 local sfx = require("src.audio.sfx")
 local save = require("src.core.save")
 local config = require("src.core.config")
+local locale = require("src.core.locale")
 
 local title = {}
 
-local OPTIONS = { "Begin", "The Kiln", "Codex", "Quit" }
+local OPTIONS = { "begin", "kiln", "codex", "options", "help", "quit" }
 
 function title:enter()
   self.t = 0
@@ -60,13 +61,17 @@ function title:update(dt)
     input.consume("confirm")
     sfx.play("uiSelect")
     local opt = OPTIONS[self.sel]
-    if opt == "Begin" then
+    if opt == "begin" then
       state.switch("charselect")
-    elseif opt == "The Kiln" then
+    elseif opt == "kiln" then
       state.switch("kiln")
-    elseif opt == "Codex" then
+    elseif opt == "codex" then
       state.switch("codex")
-    elseif opt == "Quit" then
+    elseif opt == "options" then
+      state.switch("options", "title")
+    elseif opt == "help" then
+      state.switch("help")
+    elseif opt == "quit" then
       love.event.quit()
     end
   end
@@ -85,27 +90,25 @@ function title:draw()
   local pulse = 0.85 + math.sin(self.t * 1.4) * 0.1
   draw.glow(sw / 2, sh * 0.3, 300, 1, 0.35, 0.15, 0.25 * pulse)
   draw.textCentered("C E N D R E", sw / 2, sh * 0.24, 64, { 1, 0.93, 0.85, 1 })
-  draw.textCentered("the world burned. keep moving.", sw / 2, sh * 0.24 + 84, 13, { 1, 0.75, 0.55, 0.75 })
+  draw.textCentered(locale.t("ui.title.tagline"), sw / 2, sh * 0.24 + 84, 13, { 1, 0.75, 0.55, 0.75 })
 
   -- menu
-  local y0 = sh * 0.55
+  local y0 = sh * 0.52
   for i, opt in ipairs(OPTIONS) do
+    local label = locale.t("ui.title.menu_" .. opt)
     local selected = i == self.sel
-    local y = y0 + (i - 1) * 34
+    local y = y0 + (i - 1) * 32
     if selected then
-      draw.textCentered(">", sw / 2 - draw.textWidth(opt, 18) / 2 - 22, y + 3, 12, { 1, 0.55, 0.25, 1 })
+      draw.textCentered(">", sw / 2 - draw.textWidth(label, 18) / 2 - 22, y + 3, 12, { 1, 0.55, 0.25, 1 })
     end
-    draw.textCentered(opt, sw / 2, y, 18,
+    draw.textCentered(label, sw / 2, y, 18,
       selected and { 1, 1, 1, 1 } or { 1, 1, 1, 0.45 })
   end
 
   -- footer stats
   local d = save.get()
-  local line = ("cinders %d   ·   runs %d   ·   victories %d")
-    :format(d.cinders, d.stats.runs, d.stats.victories)
-  draw.textCentered(line, sw / 2, sh - 54, 11, { 1, 1, 1, 0.4 })
-  draw.textCentered("arrows/WASD move · SPACE jump · X attack · V bolt · SHIFT dash · E interact",
-    sw / 2, sh - 32, 10, { 1, 1, 1, 0.3 })
+  local line = locale.f("ui.title.stats", d.cinders, d.stats.runs, d.stats.victories)
+  draw.textCentered(line, sw / 2, sh - 44, 11, { 1, 1, 1, 0.4 })
 end
 
 state.register("title", title)

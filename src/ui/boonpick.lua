@@ -3,6 +3,7 @@ local draw = require("src.render.draw")
 local boonsSys = require("src.game.boons")
 local input = require("src.core.input")
 local sfx = require("src.audio.sfx")
+local locale = require("src.core.locale")
 
 local boonpick = {}
 boonpick.__index = boonpick
@@ -48,8 +49,8 @@ function boonpick:draw()
   love.graphics.setColor(0.02, 0.02, 0.05, 0.82)
   love.graphics.rectangle("fill", 0, 0, sw, sh)
 
-  draw.textCentered("THE ASH OFFERS", sw / 2, sh * 0.12, 26, { 1, 0.9, 0.7, 1 })
-  draw.textCentered("choose with <- -> · take with SPACE · [TAB] refuse (+15 embers)",
+  draw.textCentered(locale.t("ui.boonpick.header"), sw / 2, sh * 0.12, 26, { 1, 0.9, 0.7, 1 })
+  draw.textCentered(locale.t("ui.boonpick.instructions"),
     sw / 2, sh * 0.12 + 36, 11, { 1, 1, 1, 0.5 })
 
   local n = #self.offer
@@ -97,19 +98,20 @@ function boonpick:draw()
       end
     end
 
-    local famLabel = fam and fam.name or ""
+    local famLabel = boonsSys.familyName(fam)
     if choice.def.duo then
       local fam2 = boonsSys.family(choice.def.family2)
-      famLabel = famLabel .. " × " .. (fam2 and fam2.name or "")
+      famLabel = famLabel .. " × " .. boonsSys.familyName(fam2)
     end
     draw.textCentered(famLabel, x + cardW / 2, y + 74, 10,
       { famCol[1], famCol[2], famCol[3], 0.9 })
 
-    draw.textCentered(choice.def.name, x + cardW / 2, y + 92, 16, { 1, 1, 1, 1 })
+    draw.textCentered(boonsSys.name(choice.def), x + cardW / 2, y + 92, 16, { 1, 1, 1, 1 })
 
-    local rarityLabel = rar.name
+    local rarityLabel = boonsSys.rarityName(rar)
     if choice.isUpgrade then
-      rarityLabel = rarityLabel .. ("  ·  Lv %d→%d"):format(choice.currentLevel, choice.currentLevel + 1)
+      rarityLabel = rarityLabel .. "  ·  "
+        .. locale.f("ui.boonpick.levelUp", choice.currentLevel, choice.currentLevel + 1)
     end
     draw.textCentered(rarityLabel, x + cardW / 2, y + 114, 11,
       { rar.color[1], rar.color[2], rar.color[3], 0.95 })
@@ -119,7 +121,7 @@ function boonpick:draw()
     draw.text(desc, x + 18, y + 142, 12, { 0.92, 0.93, 0.98, 0.95 }, "left", cardW - 36)
 
     if choice.def.flavor then
-      draw.text('"' .. choice.def.flavor .. '"', x + 18, y + cardH - 58, 10,
+      draw.text('"' .. boonsSys.flavor(choice.def) .. '"', x + 18, y + cardH - 58, 10,
         { 1, 1, 1, 0.38 }, "left", cardW - 36)
     end
   end

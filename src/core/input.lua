@@ -1,8 +1,9 @@
 -- Action-based input: keyboard + gamepad merged. States query actions,
--- never raw keys.
+-- never raw keys. Keyboard bindings are remappable: overrides live in
+-- save.settings.keymap (action -> list of keys) and replace the defaults.
 local input = {}
 
-local keyMap = {
+local defaultKeyMap = {
   left = { "left", "a", "q" },       -- q for AZERTY comfort
   right = { "right", "d" },
   up = { "up", "w", "z" },
@@ -18,6 +19,43 @@ local keyMap = {
   cancel = { "escape", "c" },
 }
 -- note: z appears in both up and dash; dash takes lshift primarily on AZERTY/QWERTY.
+
+local keyMap = {}
+
+local function rebuildKeyMap()
+  local save = require("src.core.save")
+  local overrides = save.get().settings.keymap or {}
+  keyMap = {}
+  for action, keys in pairs(defaultKeyMap) do
+    keyMap[action] = overrides[action] or keys
+  end
+end
+
+-- Remappable actions surfaced in the options menu (system keys excluded).
+input.REMAPPABLE = {
+  "left", "right", "up", "down", "jump", "attack", "dash", "interact", "map", "pause",
+}
+
+function input.rebind(action, key)
+  local save = require("src.core.save")
+  local settings = save.get().settings
+  settings.keymap = settings.keymap or {}
+  settings.keymap[action] = { key }
+  save.write()
+  rebuildKeyMap()
+end
+
+function input.resetBindings()
+  local save = require("src.core.save")
+  save.get().settings.keymap = nil
+  save.write()
+  rebuildKeyMap()
+end
+
+function input.bindingLabel(action)
+  local keys = keyMap[action] or defaultKeyMap[action] or {}
+  return table.concat(keys, " / ")
+end
 
 local padMap = {
   jump = { "a" },
@@ -43,6 +81,7 @@ function input.gamepadAdded(j)
 end
 
 function input.init()
+  rebuildKeyMap()
   local joys = love.joystick.getJoysticks()
   for _, j in ipairs(joys) do
     if j:isGamepad() then joystick = j break end

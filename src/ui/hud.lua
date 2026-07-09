@@ -3,6 +3,7 @@ local draw = require("src.render.draw")
 local boonsSys = require("src.game.boons")
 local config = require("src.core.config")
 local util = require("src.core.util")
+local locale = require("src.core.locale")
 
 local hud = {}
 
@@ -63,9 +64,7 @@ function hud.draw(run, room)
   end
   local P = config.player
   cdBar(1 - player.dashCd / (P.dashCooldown * run:stat("dashCooldownMult", 1)),
-    { 0.55, 0.95, 0.9 }, "dash")
-  cdBar(1 - player.boltCd / (P.boltCooldown * run:stat("specialCooldownMult", 1)),
-    { 0.55, 0.9, 1 }, "bolt")
+    { 0.55, 0.95, 0.9 }, locale.t("ui.hud.dash"))
 
   -- currencies -------------------------------------------------------------
   local save = require("src.core.save")
@@ -78,9 +77,10 @@ function hud.draw(run, room)
   draw.text(tostring(save.get().cinders), sw - 80, 17, 13, { 0.75, 0.88, 1 })
 
   -- biome / node label
-  draw.text(run:biome().name .. "  ·  depth " .. run.depth,
+  local biomeName = locale.content("biomes", run:biome().id, "name", run:biome().name)
+  draw.text(locale.f("ui.hud.biomeDepth", biomeName, run.depth),
     sw - 260, 40, 10, { 1, 1, 1, 0.45 })
-  draw.text("seed " .. tostring(run.seed), sw - 260, 54, 9, { 1, 1, 1, 0.3 })
+  draw.text(locale.f("ui.hud.seed", tostring(run.seed)), sw - 260, 54, 9, { 1, 1, 1, 0.3 })
 
   -- boons row ---------------------------------------------------------------
   local bx = 18
@@ -102,9 +102,9 @@ function hud.draw(run, room)
   -- objective hint ------------------------------------------------------------
   if not room.exitOpen then
     local label = room.boss and (room.boss.introDone and "" or "")
-      or ("enemies: " .. room:aliveEnemies())
+      or locale.f("ui.hud.enemies", room:aliveEnemies())
     if room.waves and #room.waves > 1 and not room.boss then
-      label = label .. "   wave " .. math.min(room.waveIndex, #room.waves) .. "/" .. #room.waves
+      label = label .. "   " .. locale.f("ui.hud.wave", math.min(room.waveIndex, #room.waves), #room.waves)
     end
     if label ~= "" then
       draw.textCentered(label, sw / 2, 18, 11, { 1, 1, 1, 0.55 })
@@ -117,11 +117,13 @@ function hud.draw(run, room)
     local bw = math.min(520, sw - 200)
     local bxx = (sw - bw) / 2
     local byy = love.graphics.getHeight() - 54
+    local bossName = locale.content("bosses", boss.def.id, "name", boss.def.name)
+    local bossTitle = locale.content("bosses", boss.def.id, "title", boss.def.title or "")
     if not boss.introDone then
       -- intro banner
-      draw.textCentered(boss.def.name, sw / 2, love.graphics.getHeight() * 0.32, 34,
+      draw.textCentered(bossName, sw / 2, love.graphics.getHeight() * 0.32, 34,
         { 1, 1, 1, math.min(1, boss.intro) })
-      draw.textCentered(boss.def.title or "", sw / 2, love.graphics.getHeight() * 0.32 + 44, 14,
+      draw.textCentered(bossTitle, sw / 2, love.graphics.getHeight() * 0.32 + 44, 14,
         { 1, 0.8, 0.5, math.min(1, boss.intro) * 0.9 })
     else
       love.graphics.setColor(0, 0, 0, 0.6)
@@ -129,7 +131,7 @@ function hud.draw(run, room)
       local c = boss.def.color
       love.graphics.setColor(c[1], c[2], c[3], 0.95)
       love.graphics.rectangle("fill", bxx, byy, bw * util.clamp(boss.hp / boss.maxHP, 0, 1), 8)
-      draw.textCentered(boss.def.name, sw / 2, byy - 18, 12, { 1, 1, 1, 0.85 })
+      draw.textCentered(bossName, sw / 2, byy - 18, 12, { 1, 1, 1, 0.85 })
     end
   end
 

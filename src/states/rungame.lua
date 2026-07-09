@@ -17,6 +17,7 @@ local Mapview = require("src.ui.mapview")
 local music = require("src.audio.music")
 local sfx = require("src.audio.sfx")
 local save = require("src.core.save")
+local locale = require("src.core.locale")
 
 local rungame = {}
 
@@ -241,7 +242,7 @@ function rungame:update(dt)
 end
 
 -- Pause menu: resume, live settings, abandon.
-local PAUSE_ITEMS = { "Resume", "Music volume", "Sound volume", "Screen shake", "Abandon run" }
+local PAUSE_ITEMS = { "resume", "music", "sfx", "shake", "language", "abandon" }
 
 function rungame:updatePause()
   local settings = save.get().settings
@@ -267,23 +268,27 @@ function rungame:updatePause()
   if input.pressed("right") then delta = 0.1 end
   if delta ~= 0 then
     local util = require("src.core.util")
-    if item == "Music volume" then
+    if item == "music" then
       settings.musicVolume = util.clamp((settings.musicVolume or 0.7) + delta, 0, 1)
       music.applyVolume()
-    elseif item == "Sound volume" then
+    elseif item == "sfx" then
       settings.sfxVolume = util.clamp((settings.sfxVolume or 0.8) + delta, 0, 1)
       sfx.play("uiSelect")
-    elseif item == "Screen shake" then
+    elseif item == "shake" then
       settings.screenShake = util.clamp((settings.screenShake or 1) + delta, 0, 1.5)
+    elseif item == "language" then
+      locale.cycle()
     end
   end
 
   if input.pressed("confirm") then
     input.consume("confirm")
-    if item == "Resume" then
+    if item == "resume" then
       save.write()
       self.mode = "room"
-    elseif item == "Abandon run" then
+    elseif item == "language" then
+      locale.cycle()
+    elseif item == "abandon" then
       save.write()
       state.switch("title")
     end
@@ -295,19 +300,20 @@ function rungame:drawPause()
   local settings = save.get().settings
   love.graphics.setColor(0.02, 0.02, 0.05, 0.85)
   love.graphics.rectangle("fill", 0, 0, sw, sh)
-  draw.textCentered("PAUSED", sw / 2, sh * 0.22, 30, { 1, 1, 1, 1 })
+  draw.textCentered(locale.t("ui.pause.header"), sw / 2, sh * 0.22, 30, { 1, 1, 1, 1 })
 
   local values = {
-    ["Music volume"] = math.floor((settings.musicVolume or 0.7) * 100 + 0.5) .. "%",
-    ["Sound volume"] = math.floor((settings.sfxVolume or 0.8) * 100 + 0.5) .. "%",
-    ["Screen shake"] = math.floor((settings.screenShake or 1) * 100 + 0.5) .. "%",
+    music = math.floor((settings.musicVolume or 0.7) * 100 + 0.5) .. "%",
+    sfx = math.floor((settings.sfxVolume or 0.8) * 100 + 0.5) .. "%",
+    shake = math.floor((settings.screenShake or 1) * 100 + 0.5) .. "%",
+    language = locale.languageName(),
   }
   local y0 = sh * 0.36
   for i, item in ipairs(PAUSE_ITEMS) do
     local selected = i == self.pauseSel
     local y = y0 + (i - 1) * 34
-    local label = item
-    if values[item] then label = item .. "   < " .. values[item] .. " >" end
+    local label = locale.t("ui.pause." .. item)
+    if values[item] then label = label .. "   < " .. values[item] .. " >" end
     if selected then
       draw.textCentered(">", sw / 2 - draw.textWidth(label, 16) / 2 - 20, y + 2, 12, { 1, 0.55, 0.25, 1 })
     end
@@ -318,7 +324,7 @@ function rungame:drawPause()
   local boonList = {}
   for _, owned in ipairs(self.run.boons) do
     local def = boonsSys.def(owned.id)
-    if def then boonList[#boonList + 1] = def.name .. " " .. owned.level end
+    if def then boonList[#boonList + 1] = boonsSys.name(def) .. " " .. owned.level end
   end
   if #boonList > 0 then
     draw.text(table.concat(boonList, "  ·  "), sw * 0.1, sh - 70, 10,

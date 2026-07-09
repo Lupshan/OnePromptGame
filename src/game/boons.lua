@@ -6,6 +6,7 @@
 -- from each of their two families -- the Hades-style "build explosion".
 local registry = require("src.game.registry")
 local save = require("src.core.save")
+local locale = require("src.core.locale")
 
 local boons = {}
 
@@ -141,10 +142,25 @@ end
 
 function boons.describe(def, level, rarityId)
   local mult = boons.rarity(rarityId).mult
-  if type(def.desc) == "function" then
-    return def.desc(level, mult)
-  end
-  return def.desc or ""
+  return locale.boonDesc(def, level, mult)
+end
+
+-- Localized display helpers (fall back to the def's own English fields).
+function boons.name(def)
+  return locale.content("boons", def.id, "name", def.name)
+end
+
+function boons.flavor(def)
+  return locale.content("boons", def.id, "flavor", def.flavor)
+end
+
+function boons.familyName(famDef)
+  if not famDef then return "" end
+  return locale.content("families", famDef.id, "name", famDef.name)
+end
+
+function boons.rarityName(rar)
+  return locale.t("ui.rarity." .. rar.id)
 end
 
 return boons

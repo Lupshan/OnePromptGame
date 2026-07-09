@@ -18,6 +18,7 @@ local draw = require("src.render.draw")
 local sfx = require("src.audio.sfx")
 local signals = require("src.core.signals")
 local save = require("src.core.save")
+local locale = require("src.core.locale")
 
 local Room = {}
 Room.__index = Room
@@ -265,7 +266,7 @@ function Room:stockShop(streamName)
     if i == 1 then
       self.props[#self.props + 1] = {
         kind = "shopItem", x = m.x, y = m.y, item = "heal",
-        price = 35, label = "Mend 40 HP", sold = false,
+        price = 35, labelKey = "ui.room.mend", sold = false,
       }
     else
       local o = offer[idx]
@@ -274,7 +275,7 @@ function Room:stockShop(streamName)
         self.props[#self.props + 1] = {
           kind = "shopItem", x = m.x, y = m.y, item = "boon", offer = o,
           price = math.floor(45 * o.rarity.mult),
-          label = o.def.name, sold = false,
+          sold = false,
         }
       end
     end
@@ -578,17 +579,17 @@ function Room:runShrineEvent(prop)
       particles.burst(px, py, { 1, 0.3, 0.35 }, 12, { speed = 90 })
       sfx.play("playerHurt", 0.7)
       if self.callbacks.onSigil then self.callbacks.onSigil({}) end
-      prop.resultText = "The shrine takes " .. cost .. " blood. It gives back power."
+      prop.resultText = locale.f("ui.room.shrine_blood", cost)
     end,
     function()
       self.pickups:spawnBurst("ember", px, py, 10, 5)
       sfx.play("pickup")
-      prop.resultText = "The shrine hums. Embers spill out."
+      prop.resultText = locale.t("ui.room.shrine_embers")
     end,
     function()
       self.pickups:spawnBurst("cinder", px, py, 3, 4)
       sfx.play("cinder")
-      prop.resultText = "Something old approves. Cinders remain."
+      prop.resultText = locale.t("ui.room.shrine_cinders")
     end,
   }
   if save.isUnlocked("shrine_events") then
@@ -606,10 +607,10 @@ function Room:runShrineEvent(prop)
         local def = boonsSys.def(pick.id)
         particles.ring(px, py, { 1, 0.85, 0.4 }, 40)
         sfx.play("boon")
-        prop.resultText = "The stones listen. " .. (def and def.name or "A gift") .. " deepens."
+        prop.resultText = locale.f("ui.room.shrine_deepen", def and boonsSys.name(def) or "?")
       else
         self.pickups:spawnBurst("ember", px, py, 8, 5)
-        prop.resultText = "The stones find nothing to deepen. Embers, then."
+        prop.resultText = locale.t("ui.room.shrine_deepen_none")
       end
     end
     outcomes[#outcomes + 1] = function()
@@ -618,12 +619,12 @@ function Room:runShrineEvent(prop)
         local gain = math.max(20, run.embers)
         run:addEmbers(gain)
         sfx.play("pickup")
-        prop.resultText = "The shrine matches your purse. +" .. gain .. " embers."
+        prop.resultText = locale.f("ui.room.shrine_greed_win", gain)
       else
         local loss = math.floor(run.embers / 2)
         run.embers = run.embers - loss
         sfx.play("uiDeny")
-        prop.resultText = "The shrine laughs. " .. loss .. " embers gone."
+        prop.resultText = locale.f("ui.room.shrine_greed_lose", loss)
       end
     end
     outcomes[#outcomes + 1] = function()
@@ -631,7 +632,7 @@ function Room:runShrineEvent(prop)
       self.player:heal(math.floor(run:maxHP() * 0.3))
       self.player.boltCd = 12
       sfx.play("heal")
-      prop.resultText = "It mends you, and borrows your bolt a while."
+      prop.resultText = locale.t("ui.room.shrine_mend")
     end
   end
   outcomes[love.math.random(1, #outcomes)]()
@@ -773,11 +774,15 @@ function Room:drawProps()
   if self.nearProp then
     local prop = self.nearProp
     local label
-    if prop.kind == "chest" then label = "open"
-    elseif prop.kind == "altar" then label = "commune"
-    elseif prop.kind == "fountain" then label = "drink"
-    elseif prop.kind == "shrine" then label = "offer"
-    elseif prop.kind == "shopItem" then label = prop.label .. "  [" .. prop.price .. "]"
+    if prop.kind == "chest" then label = locale.t("ui.room.open")
+    elseif prop.kind == "altar" then label = locale.t("ui.room.commune")
+    elseif prop.kind == "fountain" then label = locale.t("ui.room.drink")
+    elseif prop.kind == "shrine" then label = locale.t("ui.room.offer")
+    elseif prop.kind == "shopItem" then
+      local boonsSys = require("src.game.boons")
+      local name = prop.labelKey and locale.t(prop.labelKey)
+        or (prop.offer and boonsSys.name(prop.offer.def)) or "?"
+      label = locale.f("ui.room.buy", name, prop.price)
     end
     if label then
       draw.textCentered("[E] " .. label, prop.x, prop.y - 44, 10, { 1, 1, 1, 0.85 })

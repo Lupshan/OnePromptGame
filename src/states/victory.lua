@@ -6,6 +6,7 @@ local music = require("src.audio.music")
 local particles = require("src.render.particles")
 local util = require("src.core.util")
 local save = require("src.core.save")
+local locale = require("src.core.locale")
 
 local victory = {}
 
@@ -60,17 +61,19 @@ function victory:draw()
   particles.draw()
 
   local a = math.min(1, self.t)
-  draw.textCentered("THE SPIRE FALLS QUIET", sw / 2, sh * 0.18, 32, { 1, 0.95, 0.8, a })
-  draw.textCentered("what burned is finally allowed to rest", sw / 2, sh * 0.18 + 46, 13,
+  draw.textCentered(locale.t("ui.victory.header"), sw / 2, sh * 0.18, 32, { 1, 0.95, 0.8, a })
+  draw.textCentered(locale.t("ui.victory.sub"), sw / 2, sh * 0.18 + 46, 13,
     { 1, 0.9, 0.7, a * 0.7 })
 
   local run = self.run
   if run then
+    local charName = run.character
+      and locale.content("characters", run.character.id, "name", run.character.name) or "?"
     local lines = {
-      ("cleared in %s"):format(util.formatTime(run.time)),
-      ("%d kills  ·  %d rooms"):format(run.kills, run.depth),
-      ("%d cinders earned (+%d victory tribute)"):format(run.cindersEarned, VICTORY_BONUS),
-      ("as %s  ·  seed %d"):format(run.character and run.character.name or "?", run.seed),
+      locale.f("ui.victory.clearedIn", util.formatTime(run.time)),
+      locale.f("ui.victory.killsRooms", run.kills, run.depth),
+      locale.f("ui.victory.cinders", run.cindersEarned, VICTORY_BONUS),
+      locale.f("ui.victory.asChar", charName, run.seed),
     }
     for i, line in ipairs(lines) do
       local la = util.clamp(self.t - 0.4 - i * 0.25, 0, 1)
@@ -79,7 +82,7 @@ function victory:draw()
   end
 
   if self.t > 1.2 then
-    draw.textCentered("[SPACE] return to the ash", sw / 2, sh - 70, 13,
+    draw.textCentered(locale.t("ui.victory.footer"), sw / 2, sh - 70, 13,
       { 1, 1, 1, 0.55 + math.sin(self.t * 2) * 0.15 })
   end
 end
