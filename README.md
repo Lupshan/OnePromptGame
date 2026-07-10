@@ -16,7 +16,12 @@ audio or font file in this repository.
 - **Build like a gambler.** Boons from six Remnants (Ember, Tempest, Gloom,
   Verdance, Aegis, Zephyr) stack into builds; duo boons unlock when you cross
   two families and blow the run wide open.
-- **Die like it matters.** Death sends you back with nothing but *cinders* —
+- **Fight like a spark.** One weapon, one identity: an instant crescent
+  slash that chains with your movement. Enemies die fast and so do you —
+  every death costs one **attempt** from a small shared pool and resets the
+  room (identically — layouts are learnable); cross a room deathless to
+  bank an attempt back. Run out, and the ash takes you.
+- **Die like it matters.** A finished run leaves nothing but *cinders* —
   meta-currency that unlocks new characters, boons and rooms at the Kiln.
   Unlocks widen what can happen; they never make you stronger. Every run
   starts at base power.

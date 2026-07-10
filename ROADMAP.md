@@ -11,7 +11,7 @@ CENDRE_SMOKE=1 CENDRE_SMOKE_FRAMES=32000 xvfb-run love .
 # expect: "[smoke] VICTORY" in output, no Error/traceback
 ```
 
-## Current iteration: 02 — "Recenter on the jumper" ✅ (tagged `iteration-02`)
+## Current iteration: 03 — "Level design + combat" ✅ (tagged `iteration-03`)
 
 Versioning convention: one git tag `iteration-NN` per playtested iteration.
 `iteration-01` = the state playtested after session 1. NOTE: the session's
@@ -86,12 +86,44 @@ cinders → Kiln unlocks → new run. Verified end-to-end by autopilot traversal
 - [x] Map readability: bright selectable paths, traveled trail, "you are
       here", explicit localized labels, UTF-8 uppercase for accents
 
-## Next up (session 3+ / iteration 03 candidates, in rough priority order)
+### Iteration 03 (2026-07-10) — "level design + combat" brief
 
-- [ ] **Playtest feedback pass** on iteration 02 (expect movement-feel tuning
-      in config.lua and chunk difficulty rebalancing)
-- [ ] **More vertical chunks** (wall-jump chimneys once the validator models
-      wall jumps; currently single-jump ladders only)
+- [x] RESEARCH FIRST (mandatory step 02): `docs/level-design-notes.md`
+      (Celeste rooms-as-problems, SMB density, Dead Cells assembly → rules
+      R1-R8) and `docs/combat-notes.md` (Vlambeer/HK/Dead Cells impact
+      grammar → targets C1-C7) — written BEFORE any implementation
+- [x] COMBAT REDONE (C1-C7): instant crescent slash smear (~4 frames) with
+      bright leading edge, contact FX at the enemy, attacker recoil,
+      hitstop ladder (hit/kill/finisher), cooldown 0.16s; enemy HP -40%,
+      flattened depth scaling; player 70 base HP, invuln 0.7s — fast,
+      lethal, hits matter
+- [x] DEATH MODEL (hard-but-fair): shared pool of 3 attempts; any death →
+      identical room restart (RNG stream prefix reset), full HP, -1 attempt;
+      deathless room crossing banks +1 (capped); 0 = run over. HUD flame
+      pips + localized death banner
+- [x] SHAPE INVERSION (§06): player = ROUND (orb body, round afterimages,
+      particles, pickups, HUD markers), enemies = ANGULAR (8 shapes
+      re-drawn triangular/spiked + velocity nose shards, hostile
+      projectiles = shards; friendly stay round)
+- [x] LEVELGEN = ASSEMBLY OF INTENTIONAL PROBLEMS (§03): full-kit
+      reachability model (climb 5, jump 9-minus-rise, wall-jump chimneys
+      with ≤2-row wall-break tolerance); escalation ordering (tier ramps
+      across a room's middle slots); NEW `kitwork.lua` chunk library —
+      17 authored problems in 7 mechanic families (gap/gate/updraft/
+      chimney/rhythm/drop/squeeze), each REQUIRING double jump, dash or
+      wall-jump, enemies on the intended line, damage-not-death safety
+      nets; `vclimb_wallshaft` true wall-jump flue; chunk README rewritten
+      with the envelope + chaining rules
+- [x] Mobility boons strengthened & weighted (zephyr family ×1.4 in offers)
+- [x] Iteration-02 leftovers verified: map readability ✓ remapping ✓
+      fr locale ✓ (screenshots + smoke)
+- [x] Verified: 6480 rooms / 0 fallbacks / 0 walkable leaks; iso-test per
+      new chunk (17×40 + vclimb stacks 40); 3 full smoke runs → VICTORY
+
+## Next up (session 4+ / iteration 04 candidates, in rough priority order)
+
+- [ ] **Playtest feedback pass** on iteration 03 (expect: attack feel
+      constants, attempts-pool size, chunk tier rebalancing)
 - [ ] **Traversal variety**: moving platforms, crumble blocks, dash crystals
       (mid-air dash refill pickups — pure traversal tools, Celeste-style)
 
