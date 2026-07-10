@@ -93,6 +93,55 @@ return {
     end,
   },
   {
+    id = "twin_gale",
+    family = "zephyr",
+    name = "Twin Gale",
+    flavor = "One breath out. Another, before the world inhales.",
+    maxLevel = 1,
+    weight = 0.7,
+    desc = function(l, m)
+      _ = l _ = m
+      return "+1 air dash before you must touch ground (hard cap: 2)."
+    end,
+    apply = function(run, ctx)
+      _ = ctx
+      run:addFlat("airDashes", 1)
+    end,
+  },
+  {
+    id = "ashwing",
+    family = "zephyr",
+    name = "Ashwing",
+    flavor = "Falling is flying with worse manners.",
+    maxLevel = 1,
+    weight = 0.8,
+    desc = function(l, m)
+      _ = l _ = m
+      return "Hold JUMP while falling to glide gently down."
+    end,
+    apply = function(run, ctx)
+      _ = ctx
+      run:addFlat("glide", 1)
+    end,
+  },
+  {
+    id = "spring_step",
+    family = "zephyr",
+    name = "Spring Step",
+    flavor = "The dash winds the spring. The jump lets it go.",
+    maxLevel = 3,
+    desc = function(l, m)
+      return ("For 1.2s after a dash, your next jump is +%d%% higher."):format(
+        math.floor(10 * l * m))
+    end,
+    apply = function(run, ctx)
+      ctx.on("playerDash", function()
+        run.custom.springUntil = run.time + 1.2
+        run.custom.springBoost = math.min(0.10 * ctx.level * ctx.mult, 0.45)
+      end)
+    end,
+  },
+  {
     id = "ghost_step",
     family = "zephyr",
     name = "Ghost Step",

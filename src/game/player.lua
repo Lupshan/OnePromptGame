@@ -36,7 +36,7 @@ function Player.new(room, x, y, run)
   self.dashTimer = 0
   self.dashCd = 0
   self.dashDx, self.dashDy = 0, 0
-  self.dashAvailable = true
+  self.airDashesUsed = 0
 
   self.attackCd = 0
   self.comboStep = 0
@@ -164,6 +164,13 @@ function Player:update(dt)
       g = g * P.fallGravityMult
     end
     self.vy = math.min(self.vy + g * dt, P.maxFall)
+    -- glide (Ashwing boon): hold jump while falling to drift down slowly
+    if self:stat("glide", 0) > 0 and self.vy > 0 and input.down("jump") and not sliding then
+      self.vy = math.min(self.vy, 74)
+      if love.math.random() < dt * 10 then
+        particles.dust(self.x + self.w / 2, self.y + self.h, -self.facing, 1)
+      end
+    end
     _ = sliding
 
     -- Jumping ---------------------------------------------------------
@@ -186,7 +193,8 @@ function Player:update(dt)
   end
 
   -- Dash input ---------------------------------------------------------
-  if input.pressed("dash") and self.dashCd <= 0 and self.dashAvailable and self.dashTimer <= 0 then
+  if input.pressed("dash") and self.dashCd <= 0 and self.dashTimer <= 0
+     and (self.onGround or self.airDashesUsed < self:stat("airDashes", 1)) then
     self:doDash(ax)
   end
 
@@ -209,7 +217,7 @@ function Player:update(dt)
   if self.onGround then
     self.coyote = P.coyoteTime
     self.airJumpsUsed = 0
-    if P.dashRefreshOnGround then self.dashAvailable = true end
+    if P.dashRefreshOnGround then self.airDashesUsed = 0 end
   end
 
   -- Landing juice
@@ -257,7 +265,12 @@ function Player:update(dt)
 end
 
 function Player:doJump()
-  self.vy = -P.jumpVel * self:stat("jumpMult", 1)
+  local boost = 1
+  if self.run and self.run.custom.springUntil and self.run.time < self.run.custom.springUntil then
+    boost = 1 + (self.run.custom.springBoost or 0)
+    self.run.custom.springUntil = nil
+  end
+  self.vy = -P.jumpVel * self:stat("jumpMult", 1) * boost
   self.jumping = true
   self.jumpBuf = 0
   self.coyote = 0 -- consumed: prevents phantom double jumps
@@ -302,7 +315,7 @@ function Player:doDash(ax)
   if dx ~= 0 then self.facing = util.sign(dx) end
   self.dashTimer = P.dashTime
   self.dashCd = P.dashCooldown * self:stat("dashCooldownMult", 1)
-  if not self.onGround then self.dashAvailable = false end
+  if not self.onGround then self.airDashesUsed = self.airDashesUsed + 1 end
   self.vy = 0
   self.jumping = false
   self.invuln = math.max(self.invuln, P.dashTime + 0.02) -- dash i-frames
@@ -364,7 +377,7 @@ function Player:doMelee()
   -- pogo: down-strike on an enemy bounces the player
   if anyHit and math.sin(angle) > 0.5 then
     self.vy = -P.jumpVel * 0.85
-    self.dashAvailable = true
+    self.airDashesUsed = 0
     self.airJumpsUsed = 0
   end
 

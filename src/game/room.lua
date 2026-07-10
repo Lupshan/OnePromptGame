@@ -838,11 +838,37 @@ function Room:drawProps()
   end
 end
 
+-- First-room onboarding: floating key hints over the spawn area, using the
+-- player's LIVE bindings (remaps show up here).
+function Room:drawHints()
+  local input = require("src.core.input")
+  local hints = {
+    { key = input.bindingLabel("left"):match("^[^/]+"):gsub("%s+$", "") .. "/"
+        .. input.bindingLabel("right"):match("^[^/]+"):gsub("%s+$", ""),
+      label = locale.t("ui.room.hint_move"), x = 90 },
+    { key = input.bindingLabel("jump"):match("^[^/]+"):gsub("%s+$", ""),
+      label = locale.t("ui.room.hint_jump"), x = 210 },
+    { key = input.bindingLabel("dash"):match("^[^/]+"):gsub("%s+$", ""),
+      label = locale.t("ui.room.hint_dash"), x = 330 },
+    { key = input.bindingLabel("attack"):match("^[^/]+"):gsub("%s+$", ""),
+      label = locale.t("ui.room.hint_attack"), x = 430 },
+  }
+  local y = self.spawnY - 40
+  for _, h in ipairs(hints) do
+    local a = 0.5 + math.sin(self.time * 2) * 0.12
+    draw.textCentered("[" .. h.key:upper() .. "]", h.x, y, 9, { 1, 0.85, 0.6, a })
+    draw.textCentered(h.label, h.x, y + 12, 8, { 1, 1, 1, a * 0.85 })
+  end
+end
+
 function Room:draw(camera)
   self.background:draw(camera)
   self:drawTiles(camera)
   self:drawDoors()
   self:drawProps()
+  if self.roomType == "entry" and self.run.biomeIndex == 1 and self.depth == 0 then
+    self:drawHints()
+  end
   self.pickups:draw()
   for _, e in ipairs(self.enemies) do
     if not e.dead then e:draw() end

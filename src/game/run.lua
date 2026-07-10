@@ -25,6 +25,8 @@ local STAT_CAPS = {
   critChance = { 0, 0.6 },
   luck = { 0.5, 4.0 },
   airJumps = { 0, 3 },
+  airDashes = { 1, 2 },  -- HARD guardrail: mobility never becomes infinite
+  glide = { 0, 1 },
   lifesteal = { 0, 6 }, -- flat hp per hit, capped
   thorns = { 0, 60 },
 }

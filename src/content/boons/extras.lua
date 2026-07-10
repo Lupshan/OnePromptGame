@@ -147,7 +147,7 @@ return {
           local room = run.currentRoom
           if room and room.player then
             room.player.dashCd = 0
-            room.player.dashAvailable = true
+            room.player.airDashesUsed = 0
           end
         end
       end)

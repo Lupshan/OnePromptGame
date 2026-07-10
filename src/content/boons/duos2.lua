@@ -116,7 +116,7 @@ return {
     apply = function(run, ctx)
       ctx.on("playerHurt", function(player)
         player.dashCd = 0
-        player.dashAvailable = true
+        player.airDashesUsed = 0
         -- short burst of speed handled as a one-shot velocity kick
         player.vx = player.vx * 1.6
         local cx, cy = player:center()

@@ -12,6 +12,12 @@
 -- fail are regenerated; after maxRegenAttempts a known-safe flat corridor is
 -- used (the anti-softlock net; it is intentionally the only walkable layout
 -- left in the game and it should essentially never appear).
+--
+-- MOBILITY CALIBRATION DECISION (iteration 02): generation is calibrated on
+-- the BASE movement kit and validated against it, forever. Mobility boons
+-- (air dashes, glide, extra jumps...) only add fluidity and optional skips;
+-- they are hard-capped in run.lua and never REQUIRED by any room. This keeps
+-- reachability provable and skips intentional rather than accidental.
 local physics = require("src.game.physics")
 local registry = require("src.game.registry")
 local reachability = require("src.game.levelgen.reachability")
