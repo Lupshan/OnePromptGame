@@ -13,7 +13,7 @@ local generator = require("src.game.levelgen.generator")
 local reachability = require("src.game.levelgen.reachability")
 local RNG = require("src.core.rng")
 
-local CHUNK_FILES = { "basic", "platforming", "combat", "special", "expansion", "vertical" }
+local CHUNK_FILES = { "basic", "platforming", "kitwork", "combat", "special", "expansion", "vertical" }
 for _, file in ipairs(CHUNK_FILES) do
   local defs = require("src.content.chunks." .. file)
   for _, d in ipairs(defs) do registry.add("chunk", d) end

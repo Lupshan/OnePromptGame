@@ -4,8 +4,30 @@ A chunk is a slice of room, 20 tiles tall, any width (12-24 is typical).
 Rooms are built by concatenating chunks horizontally between two door walls,
 then validated for reachability (see `src/game/levelgen/reachability.lua`).
 If a generated room fails validation it is regenerated with other chunks, so
-an imperfect chunk degrades gracefully — but try to keep every chunk
-traversable left-to-right with single jumps (max gap 4 tiles, max climb 3).
+an imperfect chunk degrades gracefully — but every chunk should stay
+provably traversable under the FULL-KIT envelope below.
+
+## Iteration-03 design rules (see docs/level-design-notes.md)
+
+Each chunk is ONE intentional platforming problem with a name and an idea —
+never filler geometry. `platforming.lua` holds the single-jump problems,
+`kitwork.lua` the full-kit families (gap / gate / updraft / chimney /
+rhythm / drop / squeeze). Enemies are placed ON the intended line, safety
+nets cost damage rather than the run, and difficulty tiers 1-3 escalate
+across a room (the generator ramps tiers across its middle slots).
+
+## Full-kit movement envelope (what the validator can prove)
+
+- climbs up to **5 rows** (4-5 = double jump territory);
+- jumps up to **9 columns**, minus 1 per row risen (6+ = dash territory;
+  distances are column counts: a 4-tile air gap = 5 columns);
+- **wall-jump chimneys**: two facing solid walls 2-4 clear columns apart
+  climb any height while both walls persist; a break of ≤ 2 rows in ONE
+  wall is crossable while the other is solid; the top of a wall is a
+  landing right where it ends. Wall tops need feet+head clearance, so
+  keep them at row ≥ 3 (vclimb) / clear of the room ceiling.
+- Boon mobility (extra air-dashes, glide) is NEVER required — it only buys
+  fluidity and optional skips.
 
 ## Legend
 
@@ -35,7 +57,17 @@ traversable left-to-right with single jumps (max gap 4 tiles, max climb 3).
 - `map`: the ASCII grid (20 rows). Short rows are right-padded with `.`.
 
 Add a file in this folder returning a list of chunk defs and they are picked
-up automatically — no other wiring needed.
+up automatically by the game — but also add it to the file lists in
+`tests/gen_test.lua` (headless tests can't enumerate the directory the same
+way and must name files explicitly).
+
+One more chaining rule learned the hard way: a chunk whose `entry` is
+HIGHER than its own `exit` (e.g. `high` → `low`) can be asked to follow
+itself when the pool is thin — the generator falls back to the raw pool
+when no chunk fits a seam. Such chunks must also be enterable at their exit
+height (a jumpable route from a low seam into the problem, like
+`drop_shafts`' bottom corridor or `drop_wells`' floor pockets), or every
+retry chain-fails.
 
 ## Iteration-02 discipline (walkability)
 

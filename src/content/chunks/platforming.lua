@@ -1,10 +1,11 @@
--- Traversal chunks (iteration 02). DISCIPLINE: every chunk must be
--- impossible to cross by walking/falling alone -- a real gap, a climb, or a
--- hazard belt on every path. Entry/exit tags name the height of the open
--- path at each edge: low = ground top 18 (feet 17), mid = ledge top 12
--- (feet 11), high = ledge top 6 (feet 5).
--- Jump envelope: climbs <= 3 rows; jump distance <= 5 columns, minus 1 per
--- row climbed. Use the whole 20 rows.
+-- Traversal chunks (iteration 02): single-jump problems, the gentle half of
+-- the pool. DISCIPLINE: every chunk must be impossible to cross by
+-- walking/falling alone -- a real gap, a climb, or a hazard belt on every
+-- path. Entry/exit tags name the height of the open path at each edge:
+-- low = ground top 18 (feet 17), mid = ledge top 12 (feet 11), high =
+-- ledge top 6 (feet 5). These chunks stay inside the single-jump envelope
+-- (climbs <= 3 rows, jumps <= 5 columns minus 1 per row climbed); the
+-- full-kit problems (double jump, dash, wall jump) live in kitwork.lua.
 return {
   {
     id = "plat_gap_pit",
