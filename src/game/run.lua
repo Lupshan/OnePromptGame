@@ -55,6 +55,8 @@ function Run.new(opts)
   for _, b in ipairs(registry.all("biome")) do self.biomes[#self.biomes + 1] = b end
   table.sort(self.biomes, function(a, b) return (a.order or 99) < (b.order or 99) end)
 
+  self.attempts = config.run.maxAttempts  -- death model: shared pool
+  self.maxAttempts = config.run.maxAttempts
   self.depth = 0        -- rooms cleared total (drives enemy scaling)
   self.time = 0
   self.kills = 0

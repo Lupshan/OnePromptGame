@@ -113,18 +113,22 @@ function projectiles:draw()
     local c = p.color or { 1, 1, 1 }
     draw.glow(p.x, p.y, p.r * 4, c[1], c[2], c[3], 0.5)
     love.graphics.setColor(c)
-    if p.kind == "bolt" then
+    if not p.friendly then
+      -- SHAPE LANGUAGE: everything hostile is a shard pointing where it flies
+      local ang = math.atan2(p.vy, p.vx)
+      love.graphics.push()
+      love.graphics.translate(p.x, p.y)
+      love.graphics.rotate(ang)
+      love.graphics.polygon("fill", p.r * 2.2, 0, -p.r * 1.4, -p.r, -p.r * 0.6, 0, -p.r * 1.4, p.r)
+      love.graphics.pop()
+    elseif p.kind == "bolt" then
       local ang = math.atan2(p.vy, p.vx)
       love.graphics.push()
       love.graphics.translate(p.x, p.y)
       love.graphics.rotate(ang)
       love.graphics.ellipse("fill", 0, 0, p.r * 2.2, p.r * 0.85)
       love.graphics.pop()
-    elseif p.kind == "blob" then
-      love.graphics.circle("fill", p.x, p.y, p.r)
-      love.graphics.setColor(1, 1, 1, 0.6)
-      love.graphics.circle("fill", p.x - p.r * 0.25, p.y - p.r * 0.25, p.r * 0.4)
-    else -- orb
+    else -- friendly orb: round, like the player
       love.graphics.circle("fill", p.x, p.y, p.r)
     end
   end

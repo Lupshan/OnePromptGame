@@ -106,6 +106,10 @@ function Player:update(dt)
   self.comboTimer = math.max(0, self.comboTimer - dt)
   if self.comboTimer <= 0 then self.comboStep = 0 end
   self.attackAnim = math.max(0, self.attackAnim - dt * 3.4)
+  if self.slash then
+    self.slash.t = self.slash.t - dt * 9 -- ~4 frames of smear
+    if self.slash.t <= 0 then self.slash = nil end
+  end
   self.squashX = util.damp(self.squashX, 1, 12, dt)
   self.squashY = util.damp(self.squashY, 1, 12, dt)
 
@@ -332,6 +336,7 @@ function Player:doMelee()
   self.comboTimer = P.comboWindow
   self.attackCd = P.attackCooldown / self:stat("attackSpeedMult", 1)
   self.attackAnim = 1
+  self.slash = { t = 1, combo = self.comboStep }
 
   -- aim: up/down override, else facing; slight auto-aim toward nearest enemy
   local angle
@@ -350,6 +355,7 @@ function Player:doMelee()
     end
   end
   self.attackAngle = angle
+  if self.slash then self.slash.angle = angle end
 
   local range = P.attackRange * self:stat("rangeMult", 1)
   local dmg = P.attackDamage * self:stat("damageMult", 1)
@@ -364,10 +370,16 @@ function Player:doMelee()
   local hits = self.room:enemiesInArc(cx, cy, angle, range, P.attackArc)
   local anyHit = false
   local downStrike = math.sin(angle) > 0.5
+  local glowCol = self.character and self.character.glowColor or { 0.55, 0.75, 1.0 }
   for _, e in ipairs(hits) do
     anyHit = true
     local crit = love.math.random() < self:stat("critChance", 0)
     local final = crit and dmg * 2 or dmg
+    -- impact reads AT the point of contact (combat-notes C2/C3)
+    local ex, ey = e:center()
+    particles.burst(ex, ey, glowCol, crit and 8 or 5,
+      { speed = 110, kind = "dot", gravity = 0, glow = 6 })
+    particles.ring(ex, ey, { 1, 1, 1 }, 12)
     e:takeDamage(final, angle, self, {
       melee = true, crit = crit, finisher = isFinisher, combo = self.comboStep,
       downStrike = downStrike, airborne = not self.onGround,
@@ -382,8 +394,13 @@ function Player:doMelee()
   end
 
   if anyHit then
-    juice.hitstop(isFinisher and config.juice.hitstopHeavy or config.juice.hitstopLight)
-    juice.shake(isFinisher and config.juice.shakeHeavy or config.juice.shakeLight, 0.18)
+    juice.hitstop(isFinisher and config.juice.hitstopFinisher or config.juice.hitstopHit)
+    juice.shake(isFinisher and config.juice.shakeHeavy or config.juice.shakeLight, 0.15)
+    -- attacker micro-recoil: bodies move when blades land
+    if self.dashTimer <= 0 then
+      self.vx = self.vx - math.cos(angle) * P.recoil
+      if math.sin(angle) < -0.5 then self.vy = math.min(self.vy + P.recoil, 0) end
+    end
     if self.run then self.run.custom.nextMeleeBonus = nil end
   end
   sfx.play(anyHit and "hit" or "swing", isFinisher and 1.25 or 1)
@@ -448,11 +465,11 @@ function Player:draw()
   local col = self.character and self.character.color or { 0.88, 0.92, 1.0 }
   local glowCol = self.character and self.character.glowColor or { 0.55, 0.75, 1.0 }
 
-  -- dash afterimages
+  -- dash afterimages: round, like everything about the player
   for _, a in ipairs(self.afterimages) do
     local t = a.life / 0.25
     love.graphics.setColor(glowCol[1], glowCol[2], glowCol[3], 0.35 * t)
-    love.graphics.rectangle("fill", a.x, a.y + 3, self.w, self.h - 3, 3, 3)
+    love.graphics.ellipse("fill", a.x + self.w / 2, a.y + self.h * 0.55, self.w * 0.62, self.h * 0.5)
   end
 
   local cx, cy = self:center()
@@ -466,42 +483,56 @@ function Player:draw()
 
   draw.glow(cx, cy, 26, glowCol[1], glowCol[2], glowCol[3], 0.35)
 
-  -- body: rounded silhouette with squash & stretch
-  local sw = self.w * self.squashX
-  local sh = self.h * self.squashY
-  local bx = cx - sw / 2
-  local by = self.y + self.h - sh
-  love.graphics.push()
-  love.graphics.translate(cx, self.y + self.h)
-  love.graphics.scale(self.squashX, self.squashY)
-  love.graphics.translate(-cx, -(self.y + self.h))
-  -- cloak silhouette
-  love.graphics.polygon("fill",
-    self.x + self.w / 2, self.y - 1,
-    self.x + self.w + 1, self.y + self.h * 0.45,
-    self.x + self.w - 1, self.y + self.h,
-    self.x + 1, self.y + self.h,
-    self.x - 1, self.y + self.h * 0.45)
-  love.graphics.pop()
-  _ = bx _ = by _ = sw _ = sh
+  -- BODY: round (shape language: the player reads as "self", agile, soft).
+  -- A squashed/stretched orb with a lighter inner core.
+  local rx = self.w * 0.68 * self.squashX
+  local ry = self.h * 0.52 * self.squashY
+  local bodyY = self.y + self.h - ry
+  love.graphics.ellipse("fill", cx, bodyY, rx, ry)
+  love.graphics.setColor(math.min(1, col[1] * 1.15), math.min(1, col[2] * 1.15),
+    math.min(1, col[3] * 1.15), 0.5)
+  love.graphics.ellipse("fill", cx - self.facing * 1.2, bodyY - ry * 0.25, rx * 0.55, ry * 0.5)
 
   -- eyes: bright, face direction
-  local ex = cx + self.facing * 2.4
-  local ey = self.y + 5
+  local ex = cx + self.facing * 2.6
+  local ey = bodyY - ry * 0.28
   love.graphics.setColor(glowCol[1] * 1.2, glowCol[2] * 1.2, glowCol[3] * 1.2, 1)
-  love.graphics.rectangle("fill", ex - 2.6, ey, 2, 2.4)
-  love.graphics.rectangle("fill", ex + 1.2, ey, 2, 2.4)
+  love.graphics.circle("fill", ex - 1.9, ey, 1.2)
+  love.graphics.circle("fill", ex + 1.9, ey, 1.2)
 
-  -- melee arc flash
-  if self.attackAnim > 0 then
-    local t = self.attackAnim
+  -- SLASH: a filled crescent smear along the swing, alive ~4 frames
+  if self.slash and self.slash.angle then
+    local t = math.max(self.slash.t, 0)
     local range = P.attackRange * self:stat("rangeMult", 1)
-    love.graphics.setColor(1, 1, 1, t * 0.75)
-    love.graphics.setLineWidth(2.5 * t)
-    local a0 = self.attackAngle - P.attackArc * (1 - t * 0.4)
-    local a1 = self.attackAngle + P.attackArc * (1 - t * 0.4)
-    love.graphics.arc("line", "open", cx, cy, range * (0.75 + 0.25 * (1 - t)), a0, a1)
+    local a0 = self.slash.angle - P.attackArc
+    local a1 = self.slash.angle + P.attackArc
+    -- sweep: the crescent's leading edge advances as t decays
+    local sweep = 1 - t * 0.35
+    local rOut = range * (0.9 + 0.15 * sweep)
+    local rIn = rOut * 0.45
+    local pts = {}
+    local STEPS = 10
+    for i = 0, STEPS do
+      local a = a0 + (a1 - a0) * (i / STEPS)
+      pts[#pts + 1] = cx + math.cos(a) * rOut
+      pts[#pts + 1] = cy + math.sin(a) * rOut
+    end
+    for i = STEPS, 0, -1 do
+      local a = a0 + (a1 - a0) * (i / STEPS)
+      pts[#pts + 1] = cx + math.cos(a) * rIn
+      pts[#pts + 1] = cy + math.sin(a) * rIn
+    end
+    local isFin = self.slash.combo == 3
+    love.graphics.setColor(glowCol[1], glowCol[2], glowCol[3], (isFin and 0.85 or 0.6) * t)
+    love.graphics.polygon("fill", pts)
+    -- bright leading edge
+    love.graphics.setColor(1, 1, 1, 0.9 * t)
+    love.graphics.setLineWidth(2.2)
+    love.graphics.arc("line", "open", cx, cy, rOut, a0, a1)
     love.graphics.setLineWidth(1)
+    draw.glow(cx + math.cos(self.slash.angle) * rOut * 0.7,
+      cy + math.sin(self.slash.angle) * rOut * 0.7,
+      range * 0.8, glowCol[1], glowCol[2], glowCol[3], 0.3 * t)
   end
 
   love.graphics.setColor(1, 1, 1, 1)

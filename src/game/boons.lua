@@ -98,6 +98,9 @@ function boons.generateOffer(run, rng, stream, n)
     if offerable(run, def) then
       local w = def.weight or 1
       if def.duo then w = w * 1.6 end -- duos are the fun part: surface them
+      if def.family == "zephyr" or def.family2 == "zephyr" then
+        w = w * 1.4 -- mobility is the core of the game: keep it flowing
+      end
       pool[#pool + 1] = { def = def, weight = w }
     end
   end

@@ -37,8 +37,11 @@ function Room.new(opts)
   self.depth = run.depth
   self.callbacks = opts.callbacks or {}
 
-  -- generate geometry (seeded by run seed + node identity: same seed, same room)
+  -- generate geometry (seeded by run seed + node identity: same seed, same
+  -- room -- and the streams are RESET first, so restarting after a death
+  -- rebuilds the exact same room)
   local streamName = ("room:%d:%s"):format(run.biomeIndex, opts.node and opts.node.id or "solo")
+  run.rng:resetPrefix(streamName)
   local gen = generator.generate({
     roomType = self.roomType, biomeId = self.biome.id, depth = self.depth,
     rng = run.rng, streamName = streamName,

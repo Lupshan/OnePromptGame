@@ -108,6 +108,8 @@ return {
         "bounces you off enemies — it refreshes your dash and jumps.",
         "",
         "Each run: pick boons to build power, cross four regions, kill the Warden.",
+        "Dying costs one attempt from a small shared pool and resets the room;",
+        "cross a room without dying to bank one back. No attempts left: run over.",
         "Death keeps only cinders — spend them at the Kiln to widen what can appear.",
       },
       controlsHeader = "DEFAULT CONTROLS",
@@ -133,6 +135,8 @@ return {
       biomeDepth = "%s  ·  depth %d",
       seed = "seed %s",
       sealed = "the exit is sealed — clear the arena",
+      attemptLost = "the ash takes this attempt — the room resets",
+      lastAttempt = "nothing left to burn",
     },
 
     boonpick = {

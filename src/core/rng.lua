@@ -45,6 +45,17 @@ function RNG.new(seed)
   return self
 end
 
+-- Reset every stream whose name starts with prefix: the next use replays
+-- the exact same sequence. Used to regenerate a room identically when the
+-- death model restarts it (hard-but-fair: the layout is learnable).
+function RNG:resetPrefix(prefix)
+  for name in pairs(self.streams) do
+    if name:sub(1, #prefix) == prefix then
+      self.streams[name] = nil
+    end
+  end
+end
+
 -- Get (or create) a named deterministic stream.
 function RNG:stream(name)
   local s = self.streams[name]

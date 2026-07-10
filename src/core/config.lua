@@ -29,7 +29,7 @@ C.player = {
 
   dashSpeed = 430,
   dashTime = 0.14,
-  dashCooldown = 0.42,
+  dashCooldown = 0.32,          -- mobility is the core verb (combat-notes C6)
   dashRefreshOnGround = true,
 
   wallSlideSpeed = 78,
@@ -38,22 +38,27 @@ C.player = {
   wallJumpLockTime = 0.13,    -- horizontal input ignored briefly after walljump
   wallCoyoteTime = 0.08,
 
-  maxHP = 100,
-  invulnTime = 0.9,           -- after taking a hit
+  maxHP = 70,                 -- hits must matter (combat-notes C5)
+  invulnTime = 0.7,
   contactDamage = 12,         -- damage taken from touching enemies (base)
 
-  -- One attack identity (iteration 02): a melee arc that chains with the
-  -- movement kit. No lunge -- the blade never fights the platforming.
-  attackCooldown = 0.26,
-  comboWindow = 0.55,
-  attackDamage = 14,
-  attackRange = 30,
-  attackArc = 1.25,           -- radians half-angle of melee arc
+  -- One attack identity: an instant directional slash that chains with the
+  -- movement kit (combat-notes C1-C3). No lunge, fully cancellable; the
+  -- cost lever is the cooldown.
+  attackCooldown = 0.16,
+  comboWindow = 0.7,
+  attackDamage = 16,
+  attackRange = 32,
+  attackArc = 1.15,           -- radians half-angle of the slash
+  recoil = 26,                -- attacker micro-recoil on hit (px/s)
 }
 
 -- Juice ---------------------------------------------------------------------
 C.juice = {
-  hitstopLight = 0.045,
+  hitstopHit = 0.03,          -- per connected slash (combat-notes C3)
+  hitstopKill = 0.09,
+  hitstopFinisher = 0.12,
+  hitstopLight = 0.03,        -- legacy aliases (boss engine)
   hitstopHeavy = 0.11,
   shakeLight = 2.2,
   shakeHeavy = 5.5,
@@ -67,7 +72,8 @@ C.run = {
   graphLayers = 6,           -- node layers per biome (before boss layer)
   graphMinWidth = 2,
   graphMaxWidth = 4,
-  healFountainAmount = 0.35, -- % of max HP restored at rest nodes
+  healFountainAmount = 0.3,  -- % of max HP restored at rest nodes
+  maxAttempts = 3,           -- death model: shared attempts pool (see room notes)
   shopSlots = 4,
   boonChoices = 3,
 }

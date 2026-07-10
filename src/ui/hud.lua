@@ -42,18 +42,35 @@ function hud.draw(run, room)
   love.graphics.rectangle("fill", x, y, w * hpFrac, h)
   draw.text(math.floor(run.hp) .. " / " .. maxHP, x + 6, y + 1, 11, { 1, 1, 1, 0.9 })
 
+  -- attempts pool (death model): round flames under the HP bar
+  for i = 1, run.maxAttempts or 3 do
+    local lit = i <= (run.attempts or 0)
+    local ax = x + (i - 1) * 16 + 5
+    local ay = y + h + 24
+    if lit then
+      draw.glow(ax, ay, 10, 1, 0.6, 0.25, 0.5)
+      love.graphics.setColor(1, 0.72, 0.35, 1)
+      love.graphics.circle("fill", ax, ay, 4.2)
+      love.graphics.setColor(1, 0.95, 0.75, 0.9)
+      love.graphics.circle("fill", ax, ay - 0.8, 1.8)
+    else
+      love.graphics.setColor(1, 1, 1, 0.22)
+      love.graphics.circle("line", ax, ay, 4)
+    end
+  end
+
   -- shield pips
   local shield = run.custom.shield
   if shield and shield.max and shield.max > 0 then
     for i = 1, shield.max do
       local filled = i <= shield.charges
       love.graphics.setColor(0.4, 0.75, 1, filled and 0.95 or 0.25)
-      draw.diamond("fill", x + w + 14 + (i - 1) * 14, y + h / 2, filled and 5 or 3)
+      love.graphics.circle("fill", x + w + 14 + (i - 1) * 14, y + h / 2, filled and 4.5 or 3)
     end
   end
 
   -- cooldowns -------------------------------------------------------------
-  local cy = y + h + 8
+  local cy = y + h + 34
   local function cdBar(frac, color, label)
     love.graphics.setColor(0, 0, 0, 0.5)
     love.graphics.rectangle("fill", x, cy, 90, 5)
@@ -68,12 +85,11 @@ function hud.draw(run, room)
 
   -- currencies -------------------------------------------------------------
   local save = require("src.core.save")
-  draw.diamond("fill", sw - 160, 24, 4)
   love.graphics.setColor(1, 0.6, 0.2)
-  draw.diamond("fill", sw - 160, 24, 4)
+  love.graphics.circle("fill", sw - 160, 24, 4)
   draw.text(tostring(run.embers), sw - 150, 17, 13, { 1, 0.75, 0.4 })
   love.graphics.setColor(0.65, 0.85, 1)
-  draw.diamond("fill", sw - 90, 24, 4)
+  love.graphics.circle("fill", sw - 90, 24, 4)
   draw.text(tostring(save.get().cinders), sw - 80, 17, 13, { 0.75, 0.88, 1 })
 
   -- biome / node label
@@ -91,7 +107,7 @@ function hud.draw(run, room)
       local fam = boonsSys.family(def.family)
       local col = fam and fam.color or { 1, 1, 1 }
       love.graphics.setColor(col[1], col[2], col[3], 0.9)
-      draw.diamond("fill", bx + 6, by + 6, 5)
+      love.graphics.circle("fill", bx + 6, by + 6, 4.5)
       if owned.level > 1 then
         draw.text(tostring(owned.level), bx + 11, by + 2, 9, { 1, 1, 1, 0.85 })
       end

@@ -15,8 +15,12 @@ Enemy.__index = Enemy
 
 -- Depth scaling: enemies get tougher deeper into the run (this is world
 -- scaling, not player power -- the player's power comes only from boons).
+-- Iteration 03 (combat-notes C4): trash must die in 1-2 hits. Global HP
+-- tune applied to every def, and depth scaling flattened so late biomes
+-- add enemies and patterns, not sponginess.
+local HP_TUNE = 0.6
 local function depthScale(depth)
-  return math.min(1 + (depth or 0) * 0.16, 4.2)
+  return math.min(1 + (depth or 0) * 0.08, 2.6)
 end
 
 function Enemy.new(def, room, x, y, opts)
@@ -33,7 +37,7 @@ function Enemy.new(def, room, x, y, opts)
 
   local depth = room.depth or 0
   local scale = depthScale(depth)
-  self.maxHP = (def.hp or 30) * scale * (opts.elite and 2.6 or 1)
+  self.maxHP = (def.hp or 30) * HP_TUNE * scale * (opts.elite and 2.6 or 1)
   self.hp = self.maxHP
   self.damage = (def.damage or 10) * math.min(1 + depth * 0.06, 2.4) * (opts.elite and 1.5 or 1)
   self.elite = opts.elite or false
@@ -223,8 +227,8 @@ function Enemy:die(source, meta)
   end
   particles.burst(cx, cy, col, self.elite and 22 or 12, { speed = 130, glow = 8 })
   particles.ring(cx, cy, col, self.elite and 34 or 22)
-  juice.hitstop(self.elite and config.juice.hitstopHeavy or 0.05)
-  juice.shake(self.elite and 4 or 2, 0.2)
+  juice.hitstop(self.elite and config.juice.hitstopFinisher or config.juice.hitstopKill)
+  juice.shake(self.elite and 4.5 or 2.6, 0.2)
   sfx.play("kill", self.elite and 0.8 or 1)
   signals.emit("enemyKilled", self, source, meta or {})
 end
@@ -567,47 +571,90 @@ function Enemy:draw()
   elseif tele then love.graphics.setColor(1, 0.8, 0.6, 1)
   else love.graphics.setColor(col) end
 
+  -- SHAPE LANGUAGE (iteration 03): every enemy is ANGULAR -- triangles and
+  -- shards read as threat, and points aim along facing/movement so a glance
+  -- tells you where it is going. The player, by contrast, is round.
   local shape = def.shape or "blob"
   local bob = def.flying and math.sin(self.anim * 3 + self.x) * 2 or 0
   local y = self.y + bob
+  local mcy = y + self.h / 2
+  local f = self.facing
 
   if shape == "blob" then
-    love.graphics.ellipse("fill", cx, y + self.h * 0.62, self.w * 0.55, self.h * 0.45)
-    love.graphics.ellipse("fill", cx, y + self.h * 0.3, self.w * 0.4, self.h * 0.32)
+    -- jagged wedge crawling point-first
+    love.graphics.polygon("fill",
+      cx + f * self.w * 0.62, y + self.h * 0.55,          -- nose
+      cx + f * self.w * 0.1, y + self.h * 0.08,
+      cx - f * self.w * 0.35, y + self.h * 0.3,
+      cx - f * self.w * 0.58, y + self.h * 0.05,          -- back spike
+      cx - f * self.w * 0.5, y + self.h,
+      cx + f * self.w * 0.25, y + self.h)
   elseif shape == "spikeball" then
-    draw.ngon("fill", cx, y + self.h / 2, self.w * 0.52, 5, t * 2)
+    draw.ngon("fill", cx, mcy, self.w * 0.52, 5, t * 2)
     love.graphics.setColor(col[1] * 0.6, col[2] * 0.6, col[3] * 0.6)
-    draw.ngon("fill", cx, y + self.h / 2, self.w * 0.3, 5, -t * 2)
+    draw.ngon("fill", cx, mcy, self.w * 0.3, 3, -t * 2)
   elseif shape == "wisp" then
-    draw.glow(cx, y + self.h / 2, self.w * 1.6, col[1], col[2], col[3], 0.55)
-    love.graphics.circle("fill", cx, y + self.h / 2, self.w * 0.34)
+    draw.glow(cx, mcy, self.w * 1.6, col[1], col[2], col[3], 0.55)
+    draw.diamond("fill", cx, mcy, self.w * 0.38)
     for i = 1, 3 do
       local a = t * 2.4 + i * math.pi * 2 / 3
-      love.graphics.circle("fill", cx + math.cos(a) * self.w * 0.55,
-        y + self.h / 2 + math.sin(a) * self.w * 0.4, self.w * 0.12)
+      local sx = cx + math.cos(a) * self.w * 0.6
+      local sy = mcy + math.sin(a) * self.w * 0.45
+      love.graphics.polygon("fill", sx, sy - self.w * 0.16,
+        sx + self.w * 0.12, sy + self.w * 0.12, sx - self.w * 0.12, sy + self.w * 0.12)
     end
   elseif shape == "totem" then
     draw.shadedRect(self.x + 1, y, self.w - 2, self.h, col)
+    -- spiked crown
+    for i = 0, 2 do
+      local sx = self.x + 2 + i * (self.w - 4) / 2
+      love.graphics.polygon("fill", sx - 2, y, sx + 2, y, sx, y - 4)
+    end
     love.graphics.setColor(1, 1, 0.7, 0.9)
     love.graphics.circle("fill", cx, y + 5, 2.2)
   elseif shape == "shell" then
     love.graphics.arc("fill", cx, y + self.h, self.w * 0.62, math.pi, math.pi * 2)
+    -- teeth on the armored front
+    for i = 0, 2 do
+      local sx = cx + f * (self.w * 0.2 + i * self.w * 0.16)
+      love.graphics.polygon("fill", sx - 2, y + self.h, sx + 2, y + self.h,
+        sx + f * 3, y + self.h - 6)
+    end
     love.graphics.setColor(col[1] * 0.55, col[2] * 0.55, col[3] * 0.55)
     love.graphics.arc("fill", cx, y + self.h, self.w * 0.4, math.pi, math.pi * 2)
   elseif shape == "husk" then
     draw.shadedRect(self.x, y + 2, self.w, self.h - 2, col)
-    love.graphics.polygon("fill", self.x, y + 2, cx, y - 4, self.x + self.w, y + 2)
+    love.graphics.polygon("fill", self.x, y + 2, cx, y - 5, self.x + self.w, y + 2)
+    -- shoulder spikes
+    love.graphics.polygon("fill", self.x, y + 4, self.x - 3, y + 8, self.x, y + 10)
+    love.graphics.polygon("fill", self.x + self.w, y + 4, self.x + self.w + 3, y + 8,
+      self.x + self.w, y + 10)
   elseif shape == "shade" then
     local wob = math.sin(t * 3 + self.x) * 1.5
     love.graphics.polygon("fill",
-      cx, y - 2 + wob,
-      self.x + self.w + 1, y + self.h * 0.5,
-      cx + math.sin(t * 5) * 3, y + self.h + 2,
-      self.x - 1, y + self.h * 0.5)
+      cx + f * self.w * 0.7, mcy + wob,                    -- nose toward prey
+      cx - f * self.w * 0.1, y - 2 + wob,
+      cx - f * self.w * 0.65, mcy - self.h * 0.15,
+      cx - f * self.w * 0.4, mcy + self.h * 0.2,
+      cx - f * self.w * 0.7, y + self.h + 1,
+      cx, y + self.h * 0.7)
   elseif shape == "dervish" then
-    draw.diamond("fill", cx, y + self.h / 2, self.w * 0.6)
+    draw.diamond("fill", cx, mcy, self.w * 0.6)
     love.graphics.setColor(1, 1, 1, 0.5)
-    draw.diamond("line", cx, y + self.h / 2, self.w * (0.7 + math.sin(t * 8) * 0.12))
+    draw.diamond("line", cx, mcy, self.w * (0.7 + math.sin(t * 8) * 0.12))
+  end
+
+  -- direction nose: fast movers show a shard pointing along their velocity
+  if (math.abs(self.vx) > 30 or math.abs(self.vy) > 30) and not def.immovable then
+    local va = math.atan2(self.vy, self.vx)
+    local nx = cx + math.cos(va) * self.w * 0.7
+    local ny = mcy + math.sin(va) * self.w * 0.7
+    love.graphics.setColor(col[1], col[2], col[3], 0.7)
+    love.graphics.push()
+    love.graphics.translate(nx, ny)
+    love.graphics.rotate(va)
+    love.graphics.polygon("fill", 3.5, 0, -2, -2.4, -2, 2.4)
+    love.graphics.pop()
   end
 
   -- eyes

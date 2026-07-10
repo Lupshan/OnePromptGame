@@ -35,9 +35,10 @@ local function setMusicForRoom(self)
   })
 end
 
-function rungame:enterRoom(node)
+function rungame:enterRoom(node, isRestart)
   if self.room then self.room:destroy() end
   juice.reset()
+  if not isRestart then self.nodeDeaths = 0 end
   local stateSelf = self
   self.room = Room.new({
     run = self.run,
@@ -112,6 +113,11 @@ end
 function rungame:onRoomExit(room)
   if self.transition then return end
   sfx.play("door")
+  -- death model: a room crossed without dying banks an attempt (capped)
+  if (self.nodeDeaths or 0) == 0 and self.run.attempts < self.run.maxAttempts then
+    self.run.attempts = self.run.attempts + 1
+    sfx.play("heal", 1.3, 0.5)
+  end
   if room.roomType == "boss" then
     -- biome cleared
     self.run:addCinders(config.economy.cinderPerBiome)
@@ -223,9 +229,12 @@ function rungame:update(dt)
 
   self.roomFade = math.max(0, (self.roomFade or 0) - dt * 2.2)
 
-  -- death
+  -- death model (iteration 03): dying costs an attempt from the shared
+  -- pool and restarts the SAME room from its start. 0 attempts = run over.
   if p and p.dead and not self.deathTimer then
-    self.deathTimer = 1.4
+    self.deathTimer = 1.1
+    self.run.attempts = self.run.attempts - 1
+    self.nodeDeaths = (self.nodeDeaths or 0) + 1
     save.stat("deaths", 1)
     local st = save.get().stats
     st.bestBiome = math.max(st.bestBiome or 0, self.run.biomeIndex)
@@ -236,7 +245,13 @@ function rungame:update(dt)
   if self.deathTimer then
     self.deathTimer = self.deathTimer - dt
     if self.deathTimer <= 0 then
-      state.switch("gameover", self.run)
+      self.deathTimer = nil
+      if self.run.attempts > 0 then
+        self.run.hp = self.run:maxHP()
+        self:enterRoom(self.run:currentNode(), true)
+      else
+        state.switch("gameover", self.run)
+      end
     end
   end
 end
@@ -412,6 +427,13 @@ function rungame:draw()
 
   if self.mode == "paused" then
     self:drawPause()
+  end
+
+  if self.deathTimer then
+    love.graphics.setColor(0, 0, 0, 0.45)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+    local key = self.run.attempts > 0 and "ui.hud.attemptLost" or "ui.hud.lastAttempt"
+    draw.textCentered(locale.t(key), sw / 2, sh * 0.42, 18, { 1, 0.85, 0.75, 1 })
   end
 
   love.graphics.setColor(1, 1, 1, 1)

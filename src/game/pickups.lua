@@ -125,9 +125,9 @@ function pickups:draw()
     if p.kind == "sigil" then
       draw.glow(p.x, p.y + bob, 26, c[1], c[2], c[3], 0.55 + math.sin(p.t * 2) * 0.15)
       love.graphics.setColor(c)
-      draw.diamond("fill", p.x, p.y + bob, p.r)
+      love.graphics.circle("fill", p.x, p.y + bob, p.r)
       love.graphics.setColor(1, 1, 1, 0.85)
-      draw.diamond("line", p.x, p.y + bob, p.r + 2.5 + math.sin(p.t * 2) * 1.2)
+      love.graphics.circle("line", p.x, p.y + bob, p.r + 2.5 + math.sin(p.t * 2) * 1.2)
     elseif p.kind == "heart" then
       draw.glow(p.x, p.y + bob, 12, c[1], c[2], c[3], 0.5)
       love.graphics.setColor(c)
@@ -137,7 +137,7 @@ function pickups:draw()
     else
       draw.glow(p.x, p.y + bob, p.r * 3.2, c[1], c[2], c[3], 0.45)
       love.graphics.setColor(c)
-      draw.diamond("fill", p.x, p.y + bob, p.r)
+      love.graphics.circle("fill", p.x, p.y + bob, p.r * 0.9)
     end
   end
   love.graphics.setColor(1, 1, 1, 1)

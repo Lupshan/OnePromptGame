@@ -26,7 +26,7 @@ return {
     flavor = "Pass through. Leave the cutting to the wake.",
     maxLevel = 3,
     desc = function(l, m)
-      return ("Dashing through enemies deals %d damage."):format(math.floor(12 * l * m))
+      return ("Dashing through enemies deals %d damage."):format(math.floor(18 * l * m))
     end,
     apply = function(run, ctx)
       local hitSet = {}
@@ -39,7 +39,7 @@ return {
              and util.aabb(p.x - 4, p.y - 4, p.w + 8, p.h + 8, e.x, e.y, e.w, e.h) then
             hitSet[e] = true
             local ang = math.atan2(p.dashDy, p.dashDx)
-            e:takeDamage(12 * ctx.level * ctx.mult, ang, p, { dashProc = true })
+            e:takeDamage(18 * ctx.level * ctx.mult, ang, p, { dashProc = true })
           end
         end
       end)
@@ -52,11 +52,11 @@ return {
     flavor = "Weigh less than the wind's patience.",
     maxLevel = 3,
     desc = function(l, m)
-      return ("+%d%% move speed, +%d%% jump height."):format(pct(0.09 * l * m), pct(0.05 * l * m))
+      return ("+%d%% move speed, +%d%% jump height."):format(pct(0.12 * l * m), pct(0.06 * l * m))
     end,
     apply = function(run, ctx)
-      run:addMult("moveSpeedMult", 0.09 * ctx.level * ctx.mult)
-      run:addMult("jumpMult", 0.05 * ctx.level * ctx.mult)
+      run:addMult("moveSpeedMult", 0.12 * ctx.level * ctx.mult)
+      run:addMult("jumpMult", 0.06 * ctx.level * ctx.mult)
     end,
   },
   {
@@ -66,11 +66,11 @@ return {
     flavor = "Arrive like a verdict.",
     maxLevel = 3,
     desc = function(l, m)
-      return ("After dashing, your next melee strike deals +%d%% damage."):format(pct(0.3 * l * m))
+      return ("After dashing, your next melee strike deals +%d%% damage."):format(pct(0.4 * l * m))
     end,
     apply = function(run, ctx)
       ctx.on("playerDash", function()
-        run.custom.nextMeleeBonus = 0.3 * ctx.level * ctx.mult
+        run.custom.nextMeleeBonus = 0.4 * ctx.level * ctx.mult
       end)
     end,
   },
@@ -98,7 +98,7 @@ return {
     name = "Twin Gale",
     flavor = "One breath out. Another, before the world inhales.",
     maxLevel = 1,
-    weight = 0.7,
+    weight = 1.4,
     desc = function(l, m)
       _ = l _ = m
       return "+1 air dash before you must touch ground (hard cap: 2)."
@@ -114,7 +114,7 @@ return {
     name = "Ashwing",
     flavor = "Falling is flying with worse manners.",
     maxLevel = 1,
-    weight = 0.8,
+    weight = 1.4,
     desc = function(l, m)
       _ = l _ = m
       return "Hold JUMP while falling to glide gently down."
@@ -131,13 +131,13 @@ return {
     flavor = "The dash winds the spring. The jump lets it go.",
     maxLevel = 3,
     desc = function(l, m)
-      return ("For 1.2s after a dash, your next jump is +%d%% higher."):format(
-        math.floor(10 * l * m))
+      return ("For 1.4s after a dash, your next jump is +%d%% higher."):format(
+        math.floor(18 * l * m))
     end,
     apply = function(run, ctx)
       ctx.on("playerDash", function()
-        run.custom.springUntil = run.time + 1.2
-        run.custom.springBoost = math.min(0.10 * ctx.level * ctx.mult, 0.45)
+        run.custom.springUntil = run.time + 1.4
+        run.custom.springBoost = math.min(0.18 * ctx.level * ctx.mult, 0.6)
       end)
     end,
   },
