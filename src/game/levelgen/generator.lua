@@ -107,7 +107,18 @@ local function pickSequence(rng, streamName, archetype, biomeId, difficulty, cou
     for _, chunk in ipairs(pool) do
       if heightsCompatible(prevExit, chunk.entry or "low") then fits[#fits + 1] = chunk end
     end
-    local pick = rng:pick(streamName, #fits > 0 and fits or pool)
+    -- escalation (level-notes R4): rooms open easy and climax hard.
+    -- Target tier ramps across the middle slots, capped by room difficulty.
+    local slots = math.max(1, count - 2)
+    local slotIdx = i - 1
+    local tierWanted = math.max(1, math.min(difficulty,
+      math.floor(1 + (slotIdx - 1) / math.max(1, slots - 1) * (difficulty - 1) + 0.5)))
+    local tiered = {}
+    for _, chunk in ipairs(#fits > 0 and fits or pool) do
+      if (chunk.difficulty or 1) == tierWanted then tiered[#tiered + 1] = chunk end
+    end
+    local pickPool = #tiered > 0 and tiered or (#fits > 0 and fits or pool)
+    local pick = rng:pick(streamName, pickPool)
     seq[i] = pick
     prevExit = pick and pick.exit or "low"
   end

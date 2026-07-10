@@ -10,12 +10,15 @@ local physics = require("src.game.physics")
 
 local reach = {}
 
--- Conservative movement envelope. Real jump: ~3.2 tiles up, ~5.9 across.
--- MAX_JUMP_ACROSS is a column distance (a 4-tile air gap = 5 columns of
--- travel). Height trades against distance: jumping N tiles up shortens the
--- horizontal reach by N columns (see maxAcross below).
-local MAX_JUMP_UP = 3
-local MAX_JUMP_ACROSS = 5
+-- Movement envelope of the FULL BASE KIT (iteration 03): jump + double
+-- jump + dash. Physical maxima: jump ~3.2 tiles up; double jump ~5.7 up;
+-- dash adds ~3.5 tiles of horizontal reach. Conservative model: rise up to
+-- 5 rows, and a horizontal budget of 9 columns that shrinks 1 per row
+-- risen. Distances are column counts (a 4-tile air gap = 5 columns).
+-- Chunks may therefore REQUIRE double jumps and dashes; boon mobility
+-- (extra charges, glide) stays unmodeled -- it only buys fluidity/skips.
+local MAX_JUMP_UP = 5
+local MAX_JUMP_ACROSS = 9
 
 local function passable(world, c, r)
   local t = world:get(c, r)
@@ -151,6 +154,46 @@ function reach.flood(world, startC, startR)
         if standable(world, tc, r) then push(tc, r) end
         local lr = fallLanding(world, tc, r - 1)
         if lr then push(tc, lr) end
+      end
+    end
+
+    -- wall-jump chimneys: two facing solid walls, 2-4 clear columns apart,
+    -- climbable while walls persist. Each wall jump gains ~2.7 rows, so a
+    -- short break (<= 2 rows) in ONE wall is crossable while the other is
+    -- solid; the climb dies when both walls are broken at once or a break
+    -- exceeds 2 rows. Landings: any standable inside the shaft, and the top
+    -- of a wall the moment it ends.
+    do
+      local wl, wr
+      for k = 1, 3 do
+        if not wl and world:get(c - k, r) == physics.SOLID
+           and world:get(c - k, r - 1) == physics.SOLID then wl = c - k end
+        if not wr and world:get(c + k, r) == physics.SOLID
+           and world:get(c + k, r - 1) == physics.SOLID then wr = c + k end
+      end
+      if wl and wr and (wr - wl - 1) >= 2 and (wr - wl - 1) <= 4 then
+        local rr = r - 2
+        local gapL, gapR = 0, 0
+        while rr >= 2 do
+          local wallL = world:get(wl, rr) == physics.SOLID
+          local wallR = world:get(wr, rr) == physics.SOLID
+          gapL = wallL and 0 or (gapL + 1)
+          gapR = wallR and 0 or (gapR + 1)
+          -- a wall's top is a landing right where it ends
+          if gapL == 1 and standable(world, wl, rr) then push(wl, rr) end
+          if gapR == 1 and standable(world, wr, rr) then push(wr, rr) end
+          if (gapL > 0 and gapR > 0) or gapL > 2 or gapR > 2 then break end
+          -- interior must stay passable to keep climbing
+          local interiorOk = true
+          for ci = wl + 1, wr - 1 do
+            if not bodyFits(world, ci, rr) then interiorOk = false break end
+          end
+          if not interiorOk then break end
+          for ci = wl + 1, wr - 1 do
+            if standable(world, ci, rr) then push(ci, rr) end
+          end
+          rr = rr - 1
+        end
       end
     end
   end
