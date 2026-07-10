@@ -17,6 +17,7 @@ function love.load(args)
   love.graphics.setLineStyle("smooth")
   save.load()
   require("src.core.locale").init()
+  if config.debug.smoke then io.stdout:setvbuf("no") end
   draw.load()
   sfx.load()
   music.load()

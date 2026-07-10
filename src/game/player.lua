@@ -388,7 +388,8 @@ function Player:hurt(amount, fromX, fromY, ignoreInvuln)
   signals.emit("playerPreHurt", self, ev)
   if ev.prevented then
     self.invuln = math.max(self.invuln, 0.5)
-    particles.ring(self:center())
+    local cx, cy = self:center()
+    particles.ring(cx, cy, { 0.4, 0.75, 1 }, 26)
     return
   end
   amount = ev.amount

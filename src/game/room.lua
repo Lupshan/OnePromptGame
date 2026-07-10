@@ -31,7 +31,7 @@ function Room.new(opts)
   local run = opts.run
   self.run = run
   self.node = opts.node
-  self.roomType = opts.node and opts.node.type or opts.roomType or "combat"
+  self.roomType = opts.node and opts.node.type or opts.roomType or "traversal"
   if self.roomType == "start" then self.roomType = "entry" end
   self.biome = run:biome()
   self.depth = run.depth
@@ -39,17 +39,15 @@ function Room.new(opts)
 
   -- generate geometry (seeded by run seed + node identity: same seed, same room)
   local streamName = ("room:%d:%s"):format(run.biomeIndex, opts.node and opts.node.id or "solo")
-  local genType = self.roomType
-  if genType == "elite" then genType = "combat" end
-  if genType == "entry" then genType = "platform" end
   local gen = generator.generate({
-    roomType = genType, biomeId = self.biome.id, depth = self.depth,
+    roomType = self.roomType, biomeId = self.biome.id, depth = self.depth,
     rng = run.rng, streamName = streamName,
   })
   self.world = gen.world
   self.markers = gen.markers
   self.spawnTile = gen.spawn
   self.exitTile = gen.exit
+  self.form = gen.form
   self.usedFallback = gen.usedFallback
 
   self.enemies = {}
@@ -90,13 +88,27 @@ function Room:populate(streamName)
     self.props[#self.props + 1] = { kind = "light", x = m.x, y = m.y }
   end
 
-  if rt == "combat" or rt == "elite" then
+  if rt == "arena" then
+    -- THE sealed fight: the only room type (besides bosses) that locks its exit
     self.exitOpen = false
-    self:buildWaves(streamName, rt == "elite")
+    self:buildWaves(streamName, true)
     self:nextWave()
-  elseif rt == "platform" then
-    -- light enemy presence + ember trail
-    self:spawnMarkedEnemies(streamName, 0.55)
+  elseif rt == "combat" then
+    -- contested path: every authored marker spawns, exit stays open;
+    -- clearing them all is optional and rewarded with a boon sigil
+    self:spawnMarkedEnemies(streamName, 1.0)
+    self.hadEnemies = #self.enemies > 0
+    local n = rng:random(streamName, 2, 4)
+    for _ = 1, n do
+      local spot = self:randomGroundSpot(streamName)
+      if spot then
+        self.pickups:spawn({ kind = "ember", x = spot.x, y = spot.y - 8,
+          value = rng:random(streamName, 2, 4) })
+      end
+    end
+  elseif rt == "traversal" or rt == "entry" then
+    -- enemies are sparse hazards in the way, not the point
+    self:spawnMarkedEnemies(streamName, rt == "entry" and 0.2 or 0.45)
     local n = rng:random(streamName, 4, 7)
     for _ = 1, n do
       local spot = self:randomGroundSpot(streamName)
@@ -104,6 +116,10 @@ function Room:populate(streamName)
         self.pickups:spawn({ kind = "ember", x = spot.x, y = spot.y - 8,
           value = rng:random(streamName, 2, 4) })
       end
+    end
+    -- a perched challenge sigil: earn a boon by going out of your way
+    if rt == "traversal" and rng:chance(streamName, 0.5) then
+      self:placeChallengeSigil()
     end
   elseif rt == "treasure" then
     for _, m in ipairs(self.markers.chests) do
@@ -154,6 +170,32 @@ function Room:populate(streamName)
       self:buildWaves(streamName, true)
       self:nextWave()
     end
+  end
+end
+
+-- Challenge sigil: placed on a reachable perch in the upper part of the
+-- room (computed from the same flood the validator uses, so the base kit
+-- can always earn it).
+function Room:placeChallengeSigil()
+  local reach = require("src.game.levelgen.reachability")
+  local visited = reach.flood(self.world, self.spawnTile.c, self.spawnTile.r)
+  local best, bestR
+  local cols = self.world.cols
+  for k in pairs(visited) do
+    local r = math.floor(k / (cols + 2))
+    local c = k % (cols + 2)
+    -- keep away from doors, prefer the highest standable perch
+    if c > 7 and c < cols - 7 and (not bestR or r < bestR) then
+      best, bestR = { c = c, r = r }, r
+    end
+  end
+  if best and bestR and bestR < self.world.rows * 0.75 then
+    self.pickups:spawn({
+      kind = "sigil",
+      x = (best.c - 0.5) * T,
+      y = (best.r - 0.6) * T,
+      data = {},
+    })
   end
 end
 
@@ -392,7 +434,7 @@ function Room:onCleared()
     self.pickups:spawnBurst("ember", cx, self.world.heightPx * 0.5,
       6, math.ceil(rng:random("rewards", e[1], e[2]) / 6))
     self.pickups:spawn({ kind = "sigil", x = ex - 40, y = ey - 24, data = {} })
-  elseif rt == "elite" then
+  elseif rt == "arena" then
     local e = config.economy.emberDropElite
     self.pickups:spawnBurst("ember", cx, self.world.heightPx * 0.5,
       8, math.ceil(rng:random("rewards", e[1], e[2]) / 8))
@@ -453,12 +495,18 @@ function Room:update(dt)
   self:updateProps(dt)
 
   -- objective progression
-  if not self.cleared and (self.roomType == "combat" or self.roomType == "elite"
+  if not self.cleared and (self.roomType == "arena"
       or (self.roomType == "boss" and not self.boss)) then
     if self:aliveEnemies() == 0 then
       if not self:nextWave() then
         self:onCleared()
       end
+    end
+  end
+  -- contested paths: clearing every enemy is optional but rewarded
+  if not self.cleared and self.roomType == "combat" and self.hadEnemies then
+    if self:aliveEnemies() == 0 then
+      self:onCleared()
     end
   end
   if self.boss and self.boss.dead and not self.cleared then

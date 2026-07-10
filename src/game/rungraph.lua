@@ -3,8 +3,9 @@
 -- start to boss (validated by construction + prune).
 local rungraph = {}
 
-local TYPES = { "combat", "platform", "elite", "treasure", "shop", "rest", "event" }
-_ = TYPES
+-- Node types (iteration 02): traversal is the default fabric of a biome;
+-- combat marks contested paths (enemies as hazards, exit never locked);
+-- arena is the rare sealed fight. Specials as before.
 
 -- opts: layers, minWidth, maxWidth, biomeIndex
 function rungraph.generate(rng, stream, opts)
@@ -89,7 +90,7 @@ function rungraph.generate(rng, stream, opts)
   end
 
   for _, id in ipairs(mids) do
-    nodes[id].type = rng:chance(stream, 0.55) and "combat" or "platform"
+    nodes[id].type = rng:chance(stream, 0.6) and "traversal" or "combat"
   end
 
   local function placeType(t, layerLo, layerHi, count)
@@ -97,7 +98,7 @@ function rungraph.generate(rng, stream, opts)
     for _, id in ipairs(mids) do
       local n = nodes[id]
       if n.layer >= layerLo and n.layer <= layerHi
-         and (n.type == "combat" or n.type == "platform") then
+         and (n.type == "combat" or n.type == "traversal") then
         candidates[#candidates + 1] = id
       end
     end
@@ -110,7 +111,7 @@ function rungraph.generate(rng, stream, opts)
   placeType("shop", 2, L - 1, 1)
   placeType("rest", L - 1, L, 1)
   placeType("treasure", 1, L, rng:random(stream, 1, 2))
-  placeType("elite", 2, L, math.min(1 + math.floor((opts.biomeIndex or 1) / 2), 2))
+  placeType("arena", 2, L, 1) -- THE sealed fight of the biome (plus the boss)
   placeType("event", 1, L, rng:random(stream, 0, 2))
 
   nodes[startId].type = "start"

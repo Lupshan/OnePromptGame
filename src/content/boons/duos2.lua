@@ -117,10 +117,10 @@ return {
       ctx.on("playerHurt", function(player)
         player.dashCd = 0
         player.dashAvailable = true
-        run.custom.rampartUntil = (run.custom.rampartUntil or 0)
         -- short burst of speed handled as a one-shot velocity kick
         player.vx = player.vx * 1.6
-        particles.ring(player:center())
+        local cx, cy = player:center()
+        particles.ring(cx, cy, { 0.55, 0.95, 0.9 }, 30)
       end)
     end,
   },

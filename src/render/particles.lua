@@ -23,7 +23,8 @@ function particles.spawn(spec)
   p.maxLife = p.life
   p.size = spec.size or 2
   p.sizeEnd = spec.sizeEnd
-  p.r, p.g, p.b = spec.color[1], spec.color[2], spec.color[3]
+  local col = spec.color or { 1, 1, 1 }
+  p.r, p.g, p.b = col[1], col[2], col[3]
   p.kind = spec.kind or "dot"
   p.gravity = spec.gravity or 0
   p.drag = spec.drag or 0

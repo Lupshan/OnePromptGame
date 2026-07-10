@@ -4,7 +4,7 @@
 return {
   {
     id = "arena_flat",
-    kind = "combat",
+    kind = "arena",
     entry = "low", exit = "low",
     difficulty = 1,
     map = [[
@@ -32,7 +32,7 @@ return {
   },
   {
     id = "arena_tiers",
-    kind = "combat",
+    kind = "arena",
     entry = "low", exit = "low",
     difficulty = 2,
     map = [[
@@ -60,7 +60,7 @@ return {
   },
   {
     id = "arena_pillars",
-    kind = "combat",
+    kind = "arena",
     entry = "low", exit = "low",
     difficulty = 2,
     map = [[
@@ -89,7 +89,7 @@ return {
   {
     id = "arena_pit_center",
     unlock = "chunks_advanced",
-    kind = "combat",
+    kind = "arena",
     entry = "low", exit = "low",
     difficulty = 3,
     map = [[
@@ -117,7 +117,7 @@ return {
   },
   {
     id = "arena_balcony",
-    kind = "combat",
+    kind = "arena",
     entry = "low", exit = "low",
     difficulty = 2,
     map = [[
@@ -145,7 +145,7 @@ return {
   },
   {
     id = "arena_cramped",
-    kind = "combat",
+    kind = "arena",
     entry = "low", exit = "low",
     difficulty = 1,
     map = [[
@@ -173,7 +173,7 @@ return {
   },
   {
     id = "arena_split_level",
-    kind = "combat",
+    kind = "arena",
     entry = "low", exit = "low",
     difficulty = 2,
     map = [[

@@ -1,7 +1,11 @@
--- Reachability validation: proves a generated room is traversable by a
--- conservative model of the player's movement (single jump only -- no dash,
--- no double jump, no wall jump), so any real player can always get through.
--- A room that fails here is regenerated; this is the anti-softlock guarantee.
+-- Reachability validation, two models:
+--  * full flood: conservative player movement (single jump only -- no dash,
+--    no double jump, no wall jump). Exit must be reachable => no softlocks.
+--  * walk flood: walking and falling ONLY (no jumps, not even 1-tile steps).
+--    For traversal rooms the exit must NOT be walk-reachable: this is the
+--    iteration-02 acceptance test ("the exit must never be reachable by
+--    walking on flat ground") enforced at generation time.
+-- A room that fails either requirement is regenerated.
 local physics = require("src.game.physics")
 
 local reach = {}
@@ -101,23 +105,38 @@ function reach.flood(world, startC, startR)
       end
     end
 
-    -- jumps: up-then-across. Rising costs horizontal reach.
+    -- jumps: rise, then drift to the target at apex. The rise may happen at
+    -- the start column OR at any column along the way -- that's a diagonal
+    -- jump beside an overhang, which pure "up-then-across" wrongly rejects.
+    -- Rising costs horizontal reach (maxAcross shrinks with height).
     for up = 1, MAX_JUMP_UP do
       local apexR = r - up
-      if not columnClear(world, c, apexR - 1 < 1 and 1 or apexR - 1, r - 1) then break end
-      -- land directly above? (through a platform)
-      if standable(world, c, apexR) then push(c, apexR) end
       local maxAcross = MAX_JUMP_ACROSS - up
+      -- straight up (through platforms)
+      if columnClear(world, c, math.max(1, apexR - 1), r - 1)
+         and standable(world, c, apexR) then
+        push(c, apexR)
+      end
       for _, dir in ipairs({ -1, 1 }) do
         for gap = 1, maxAcross do
           local tc = c + dir * gap
           if tc < 1 or tc > world.cols then break end
-          if not rowClear(world, apexR, c + dir, tc) then break end
-          -- land at apex height
-          if standable(world, tc, apexR) then push(tc, apexR) end
-          -- or drop from the apex corridor down to a landing
-          local lr = fallLanding(world, tc, apexR)
-          if lr then push(tc, lr) end
+          for riseOff = 0, gap do
+            local cc = c + dir * riseOff
+            -- low drift toward the rise column (feet stay near takeoff height)
+            if riseOff == 0 or rowClear(world, r - 1, c + dir, cc) then
+              -- full vertical clearance at the rise column
+              if columnClear(world, cc, math.max(1, apexR - 1), r - 1) then
+                -- drift at apex from the rise column to the target
+                if cc == tc or rowClear(world, apexR, cc + dir, tc) then
+                  if standable(world, tc, apexR) then push(tc, apexR) end
+                  local lr = fallLanding(world, tc, apexR)
+                  if lr then push(tc, lr) end
+                  break
+                end
+              end
+            end
+          end
         end
       end
     end
@@ -139,23 +158,74 @@ function reach.flood(world, startC, startR)
   return visited, key
 end
 
--- Validate that from the spawn tile every target tile is reachable.
--- spawn/targets in tile coords {c=, r=} (feet positions).
-function reach.validate(world, spawn, targets)
+-- Walk-only flood: what a player could reach WITHOUT ever jumping.
+-- Moves: walk along standable tiles, fall off edges. No step-ups.
+function reach.walkFlood(world, startC, startR)
+  local cols = world.cols
+  local visited = {}
+  local queue = {}
+  local function key(c, r) return r * (cols + 2) + c end
+  local function push(c, r)
+    if c < 1 or c > world.cols or r < 1 or r > world.rows then return end
+    local k = key(c, r)
+    if visited[k] then return end
+    if not standable(world, c, r) then return end
+    visited[k] = true
+    queue[#queue + 1] = { c = c, r = r }
+  end
+
+  if not standable(world, startC, startR) then
+    local lr = fallLanding(world, startC, startR)
+    if lr then startR = lr end
+  end
+  push(startC, startR)
+
+  local head = 1
+  while head <= #queue do
+    local node = queue[head]
+    head = head + 1
+    local c, r = node.c, node.r
+    for _, dir in ipairs({ -1, 1 }) do
+      local nc = c + dir
+      if standable(world, nc, r) then push(nc, r) end
+      if bodyFits(world, nc, r) then
+        local lr = fallLanding(world, nc, r)
+        if lr then push(nc, lr) end
+      end
+    end
+  end
+  return visited, key
+end
+
+local function anyNear(visited, key, t)
+  for dc = -1, 1 do
+    for dr = -2, 1 do
+      if visited[key(t.c + dc, t.r + dr)] then return true end
+    end
+  end
+  return false
+end
+
+-- Validate a room.
+--  spawn/targets in tile coords {c=, r=} (feet positions); targets[1] must
+--  be the exit. opts.requireTraversal: additionally reject the room if the
+--  exit is reachable by walking/falling alone.
+function reach.validate(world, spawn, targets, opts)
+  opts = opts or {}
   local visited, key = reach.flood(world, spawn.c, spawn.r)
   local failed = {}
   for _, t in ipairs(targets) do
-    local ok = false
-    -- accept if the exact tile or a neighbor column is reached (doors are 2 wide)
-    for dc = -1, 1 do
-      for dr = -2, 1 do
-        if visited[key(t.c + dc, t.r + dr)] then ok = true break end
-      end
-      if ok then break end
-    end
-    if not ok then failed[#failed + 1] = t end
+    if not anyNear(visited, key, t) then failed[#failed + 1] = t end
   end
-  return #failed == 0, failed, visited
+  if #failed > 0 then return false, failed, visited end
+
+  if opts.requireTraversal and targets[1] then
+    local wVisited, wKey = reach.walkFlood(world, spawn.c, spawn.r)
+    if anyNear(wVisited, wKey, targets[1]) then
+      return false, { targets[1] }, visited, "walkable"
+    end
+  end
+  return true, failed, visited
 end
 
 reach.MAX_JUMP_ACROSS = MAX_JUMP_ACROSS
