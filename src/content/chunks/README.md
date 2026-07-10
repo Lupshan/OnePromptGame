@@ -36,3 +36,20 @@ traversable left-to-right with single jumps (max gap 4 tiles, max climb 3).
 
 Add a file in this folder returning a list of chunk defs and they are picked
 up automatically — no other wiring needed.
+
+## Iteration-02 discipline (walkability)
+
+Traversal chunks (`kind = "platform"`) must be IMPOSSIBLE to cross by walking
+and falling alone: put a real gap, a climb, or a hazard belt on every path.
+The generator rejects any room whose exit is walk-reachable (see
+`reachability.lua: walkFlood`), so a walkable chunk is dead weight.
+
+Entry/exit tags now carry real heights: `low` = ground top row 18,
+`mid` = ledge top row 12, `high` = ledge top row 6 — the ledge must touch the
+chunk's edge on the tagged side. A seam may DROP any amount (falling is
+free) but only rises when tags match exactly.
+
+Vertical chunks (`kind = "vclimb" | "vdescent"`, 24 columns wide) stack into
+shafts. Climb contract: a rung on row 20 (author columns 12-15) and one on
+row 2 (columns 7-10), joined by an internal ladder; prefer one-way platform
+rungs (`-`) — the player can rise through them, so seams always connect.

@@ -10,7 +10,9 @@ audio or font file in this repository.
 
 - **Move like a knife.** Coyote time, jump buffering, apex float, corner
   correction, wall jumps, an 8-way dash with i-frames — tuned so the game
-  never feels like it betrayed you.
+  never feels like it betrayed you. Every room is generated as a **traversal
+  challenge**: the exit is provably never reachable by walking on flat
+  ground (yes, the generator proves it).
 - **Build like a gambler.** Boons from six Remnants (Ember, Tempest, Gloom,
   Verdance, Aegis, Zephyr) stack into builds; duo boons unlock when you cross
   two families and blow the run wide open.
@@ -39,18 +41,19 @@ Useful flags & environment:
 
 ### Controls
 
-| action | keyboard | gamepad |
+| action | keyboard (remappable in Options) | gamepad |
 |---|---|---|
 | move | arrows / WASD | left stick / d-pad |
 | jump (hold = higher) | Space / C / K | A |
 | attack (3-hit combo, up/down aims) | X / J | X |
-| bolt (auto-aim ranged) | V / L | Y |
 | dash (8-way, i-frames) | Shift / I | B / RB |
 | interact | E | d-pad up |
 | map / skip boon | Tab | Back |
 | pause | Esc / P | Start |
 
-Down+attack in the air pogo-bounces off enemies. Down+jump drops through platforms.
+Down+attack in the air pogo-bounces off enemies (and refreshes your dash and
+jumps). Down+jump drops through platforms. The game speaks English and
+French — switch in Options or the pause menu.
 
 ## Testing without a display
 
@@ -173,6 +176,9 @@ Design rules the code holds itself to (see `ROADMAP.md` for status):
 1. **Zero external assets.** Nothing references a `.png`, `.wav`, or font file.
 2. **No power creep.** Meta-progression unlocks content, never stats.
 3. **No softlocks.** Every room proves reachability or is replaced by a safe layout.
+   Since iteration 02 the proof is double: reachable by the base kit AND NOT
+   crossable by walking alone (platforming is the pillar).
+6. **Iteration tags.** Each playtest iteration is tagged `iteration-NN` in git.
 4. **No degenerate combos.** Stat caps + per-proc guards on every boon interaction.
 5. **Seeded runs.** Same seed, same run — always reproducible for debugging.
 

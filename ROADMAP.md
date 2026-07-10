@@ -11,6 +11,14 @@ CENDRE_SMOKE=1 CENDRE_SMOKE_FRAMES=32000 xvfb-run love .
 # expect: "[smoke] VICTORY" in output, no Error/traceback
 ```
 
+## Current iteration: 02 — "Recenter on the jumper" ✅ (tagged `iteration-02`)
+
+Versioning convention: one git tag `iteration-NN` per playtested iteration.
+`iteration-01` = the state playtested after session 1. NOTE: the session's
+git proxy rejects tag pushes (HTTP 403) — tags exist in the local clone and
+in this history; push them from a normal checkout if they're missing on
+GitHub (`git push origin --tags`).
+
 ## Status: COMPLETE PLAYABLE LOOP + FIRST EXPANSION ✅ (session 1)
 
 Title → charselect → run (4 biomes × ~7 rooms + boss each) → death/victory →
@@ -57,18 +65,44 @@ cinders → Kiln unlocks → new run. Verified end-to-end by autopilot traversal
 - [x] Shrine outcome table deepens behind the Listening Stones unlock
 - [x] Pause menu with live settings (music/sfx volume, screen shake, abandon)
 
-## Next up (session 2+, in rough priority order)
+### Iteration 02 (2026-07-10) — post-playtest correction brief
+- [x] i18n: locale system, full en/fr UI + full fr content catalogue,
+      language switch in Options + pause (persisted)
+- [x] Key remapping (capture UI, persisted, reset) + How to Play screen +
+      first-room key hints with live bindings
+- [x] ONE attack identity: bolt removed, lunge removed, melee chains with
+      movement; bolt boons/characters reworked (Heat Haze, Storm Brand,
+      Withering Mark, Skyfang, Glasswing; Stormcaller = air kit)
+- [x] LEVELGEN RECENTERED: rooms are traversal challenges — walk-only flood
+      proves the exit is NEVER reachable on flat ground (acceptance test,
+      asserted in tests/gen_test.lua: 0 leaks); diagonal-jump reachability
+      model; variable door heights; vertical climb/descent rooms; traversal
+      chunk set rebuilt with real verticality; arena = only sealed fight
+      (1/biome + boss); enemies as placed hazards; optional-combat sigils;
+      perched challenge sigils
+- [x] Mobility as progression: air-dash charges, glide, spring jumps
+      (Twin Gale / Ashwing / Spring Step), hard caps; levelgen stays
+      calibrated on the base kit (documented in generator.lua)
+- [x] Map readability: bright selectable paths, traveled trail, "you are
+      here", explicit localized labels, UTF-8 uppercase for accents
+
+## Next up (session 3+ / iteration 03 candidates, in rough priority order)
+
+- [ ] **Playtest feedback pass** on iteration 02 (expect movement-feel tuning
+      in config.lua and chunk difficulty rebalancing)
+- [ ] **More vertical chunks** (wall-jump chimneys once the validator models
+      wall jumps; currently single-jump ladders only)
+- [ ] **Traversal variety**: moving platforms, crumble blocks, dash crystals
+      (mid-air dash refill pickups — pure traversal tools, Celeste-style)
 
 Widen and deepen — keep every addition coherent with the existing loop.
 
 - [ ] **Heat/ascension system**: post-victory difficulty modifiers (unlock-gated, opt-in;
       difficulty up, never player power up — respects the no-power-creep rule)
 - [ ] **Room objectives variety**: survive-the-timer, protect-the-ember, no-ground challenge rooms
-- [ ] **Weapon variety per character** (alt melee arcs / bolt patterns as unlockable kits)
-- [ ] **More chunks: vertical shafts** using mid/high door heights (generator currently
-      only carves low doors — extend carveDoor + chunk entry/exit plumbing first)
+- [ ] **Weapon variety per character** (alternate melee arcs as unlockable kits)
 - [ ] **More enemies** (guardian that shields allies, burrower, mirror-image caster...)
-- [ ] **More boons**: bolt-build depth (multi-shot, ricochet), boon-count synergies
+- [ ] **More boons**: pogo/traversal-build depth, boon-count synergies
 - [ ] **Minibosses** mid-biome (elite++ with one boss pattern each)
 - [ ] **Codex depth**: per-entry detail pane, kill counts, boon synergy hints
 - [ ] **Daily seed mode** (fixed seed of the day + simple local leaderboard)

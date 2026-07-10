@@ -153,6 +153,20 @@ function util.serialize(v, indent)
   return "nil"
 end
 
+-- UTF-8-aware uppercase for the characters our locales actually use.
+local UPPER_MAP = {
+  ["é"] = "É", ["è"] = "È", ["ê"] = "Ê", ["ë"] = "Ë", ["à"] = "À", ["â"] = "Â",
+  ["ç"] = "Ç", ["ô"] = "Ô", ["î"] = "Î", ["ï"] = "Ï", ["û"] = "Û", ["ù"] = "Ù",
+  ["œ"] = "Œ",
+}
+function util.upper(s)
+  s = s:upper()
+  for lo, up in pairs(UPPER_MAP) do
+    s = s:gsub(lo, up)
+  end
+  return s
+end
+
 -- Format seconds as M:SS.
 function util.formatTime(s)
   local m = math.floor(s / 60)
