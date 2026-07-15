@@ -8,6 +8,7 @@ local sfx = require("src.audio.sfx")
 local save = require("src.core.save")
 local config = require("src.core.config")
 local locale = require("src.core.locale")
+local version = require("src.core.version")
 
 local title = {}
 
@@ -109,6 +110,9 @@ function title:draw()
   local d = save.get()
   local line = locale.f("ui.title.stats", d.cinders, d.stats.runs, d.stats.victories)
   draw.textCentered(line, sw / 2, sh - 44, 11, { 1, 1, 1, 0.4 })
+
+  -- version marker (bottom-right)
+  draw.text("v" .. version.string, sw - 62, sh - 24, 11, { 1, 1, 1, 0.28 })
 end
 
 state.register("title", title)
