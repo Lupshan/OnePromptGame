@@ -1,7 +1,9 @@
+-- Game version (v3 = the iteration-03 "level design + combat" release).
+-- Canonical source is the VERSION file at the repo root; keep them in sync.
 function love.conf(t)
   t.identity = "cendre"
   t.version = "11.5"
-  t.window.title = "CENDRE"
+  t.window.title = "CENDRE v3"
   t.window.width = 1280
   t.window.height = 720
   t.window.resizable = true
